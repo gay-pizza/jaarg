@@ -138,7 +138,7 @@ impl<ID: 'static> Opts<ID> {
 
     // Ensure that all required positional arguments have been provided
     for option in self.options[state.positional_index..].iter() {
-      if option.required {
+      if option.r#type == OptType::Positional && option.required {
         error(ParseError::RequiredPositional(option.first_name()));
         return ParseResult::ExitError;
       }
