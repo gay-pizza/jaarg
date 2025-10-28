@@ -1,0 +1,9 @@
+[package]
+name = "jaarg"
+version = "0.0.1"
+edition = "2021"
+description = "It can parse your arguments you should use it it's called jaarg"
+
+[features]
+default = ["std"]
+std = []
