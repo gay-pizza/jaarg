@@ -16,6 +16,7 @@ impl<ID: 'static> Opts<ID> {
   pub const fn new(options: &'static[Opt<ID>]) -> Self {
     Self { flag_chars: "-", options }
   }
+  // TODO: Replace with a parser options construct
   pub const fn new_flag(flag_chars: &'static str, options: &'static[Opt<ID>]) -> Self {
     Self { flag_chars, options }
   }

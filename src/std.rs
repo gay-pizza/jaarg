@@ -5,9 +5,12 @@
 
 extern crate std;
 
-use std::{env, eprintln, println};
+use crate::{HandlerResult, HelpWriter, HelpWriterContext, Opt, Opts, ParseControl, ParseError, ParseResult, StandardFullHelpWriter, StandardShortUsageWriter};
+use std::collections::BTreeMap;
 use std::path::Path;
-use crate::{HandlerResult, Opt, Opts, ParseControl, ParseResult, StandardShortUsageWriter, HelpWriterContext, StandardFullHelpWriter, HelpWriter};
+use std::rc::Rc;
+use std::string::String;
+use std::{env, eprintln, println};
 
 impl<ID: 'static> Opts<ID> {
   /// Wrapper around `jaarg::parse` that gathers arguments from the command line and prints errors to stderr.
@@ -16,14 +19,8 @@ impl<ID: 'static> Opts<ID> {
   /// Requires features = [std]
   pub fn parse_easy<'a>(&self, handler: impl FnMut(&str, &ID, &Opt<ID>, &str, &str) -> HandlerResult<'a, ParseControl>
   ) -> ParseResult {
-    let mut argv = env::args();
-    let argv0 = argv.next().unwrap();
-    let program_name = Path::new(&argv0).file_name().unwrap().to_string_lossy();
-    self.parse(&program_name, argv, handler, |program_name, e| {
-      eprintln!("{program_name}: {e}");
-      self.eprint_help::<StandardShortUsageWriter<'_, ID>>(program_name);
-      eprintln!("Run '{program_name} --help' to view all available options.");
-    })
+    let (program_name, argv) = Self::easy_args();
+    self.parse(&program_name, argv, handler, |name, e| self.easy_error(name, e))
   }
 
   /// Prints full help text for the options using the standard full
@@ -47,5 +44,51 @@ impl<ID: 'static> Opts<ID> {
   pub fn eprint_help<'a, W: HelpWriter<'a, ID>>(&'a self, program_name: &'a str) {
     let ctx = HelpWriterContext { options: self, program_name };
     eprintln!("{}", W::new(ctx));
+  }
+
+  fn easy_args<'a>() -> (Rc<str>, env::Args) {
+    let mut argv = env::args();
+    let argv0 = argv.next().unwrap();
+    let program_name = Path::new(&argv0).file_name().unwrap().to_string_lossy();
+    (program_name.into(), argv)
+  }
+
+  fn easy_error(&self, program_name: &str, err: ParseError) {
+    eprintln!("{program_name}: {err}");
+    self.eprint_help::<StandardShortUsageWriter<'_, ID>>(program_name);
+    // TODO: only show when an option is marked help
+    eprintln!("Run '{program_name} --help' to view all available options.");
+  }
+}
+
+/// The result of parsing commands using `jaarg::Opts::parse_map`.
+pub enum ParseMapResult {
+  Map(BTreeMap<&'static str, String>),
+  Exit(std::process::ExitCode),
+}
+
+impl Opts<&'static str> {
+  /// Parse an iterator of strings as arguments and return the results in a BTreeMap.
+  ///
+  /// Requires features = [std]
+  pub fn parse_map<'a, S: AsRef<str> + 'a, I: Iterator<Item = S>>(&self, program_name: &str, args: I,
+  error: impl FnOnce(&str, ParseError)) -> ParseMapResult {
+    let mut out: BTreeMap<&'static str, String> = BTreeMap::new();
+    match self.parse(&program_name, args, |program_name, id,  _opt, _name, arg| {
+      out.insert(id, arg.into());
+      Ok(ParseControl::Continue)
+    }, error) {
+      ParseResult::ContinueSuccess => ParseMapResult::Map(out),
+      ParseResult::ExitSuccess => ParseMapResult::Exit(std::process::ExitCode::SUCCESS),
+      ParseResult::ExitError => ParseMapResult::Exit(std::process::ExitCode::FAILURE),
+    }
+  }
+
+  /// Parse arguments from the command line and return the results in a BTreeMap.
+  ///
+  /// Requires features = [std]
+  pub fn parse_map_easy(&self) -> ParseMapResult {
+    let (program_name, argv) = Self::easy_args();
+    self.parse_map(&program_name, argv, |name, e| self.easy_error(name, e))
   }
 }
