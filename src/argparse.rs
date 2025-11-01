@@ -25,7 +25,7 @@ pub enum ParseControl {
 }
 
 /// Result type used by the handler passed to the parser
-type HandlerResult<'a, T> = Result<T, ParseError<'a>>;
+type HandlerResult<'a, T> = core::result::Result<T, ParseError<'a>>;
 
 #[derive(Debug)]
 pub enum ParseError<'a> {
@@ -110,19 +110,19 @@ impl<ID> Default for ParserState<ID> {
 impl<ID: 'static> Opts<ID> {
   /// Parse an iterator of strings as arguments
   pub fn parse<'a, S: AsRef<str> + 'a, I: Iterator<Item = S>>(&self, program_name: &str, args: I,
-    mut handler: impl FnMut(&ID, &Opt<ID>, &str, &str) -> HandlerResult<'a, ParseControl>,
-    error: impl FnOnce(ParseError),
+    mut handler: impl FnMut(&str, &ID, &Opt<ID>, &str, &str) -> HandlerResult<'a, ParseControl>,
+    error: impl FnOnce(&str, ParseError),
   ) -> ParseResult {
     let mut state = ParserState::default();
     for arg in args {
       // Fetch the next token
-      match self.next(&mut state, arg.as_ref(), &mut handler) {
+      match self.next(&mut state, arg.as_ref(), program_name, &mut handler) {
         Ok(ParseControl::Continue) => {}
         Ok(ParseControl::Stop) => { break; }
         Ok(ParseControl::Quit) => { return ParseResult::ExitSuccess; }
         Err(err) => {
           // Call the error handler
-          error(err);
+          error(program_name, err);
           return ParseResult::ExitError;
         }
       }
@@ -130,7 +130,7 @@ impl<ID: 'static> Opts<ID> {
 
     // Ensure that value options are provided a value
     if let Some((name, _)) = state.expects_arg.take() {
-      error(ParseError::ExpectArgument(name));
+      error(program_name, ParseError::ExpectArgument(name));
       return ParseResult::ExitError;
     }
 
@@ -138,8 +138,8 @@ impl<ID: 'static> Opts<ID> {
 
     // Ensure that all required positional arguments have been provided
     for option in self.options[state.positional_index..].iter() {
-      if option.r#type == OptType::Positional && option.required {
-        error(ParseError::RequiredPositional(option.first_name()));
+      if matches!(option.r#type, OptType::Positional) && option.required {
+        error(program_name, ParseError::RequiredPositional(option.first_name()));
         return ParseResult::ExitError;
       }
     }
@@ -149,12 +149,12 @@ impl<ID: 'static> Opts<ID> {
   }
 
   /// Parse the next token in the argument stream
-  fn next<'a, 'b>(&self, state: &mut ParserState<ID>, token: &'b str,
-    handler: &mut impl FnMut(&ID, &Opt<ID>, &str, &str) -> HandlerResult<'a, ParseControl>
+  fn next<'a, 'b>(&self, state: &mut ParserState<ID>, token: &'b str, program_name: &str,
+    handler: &mut impl FnMut(&str, &ID, &Opt<ID>, &str, &str) -> HandlerResult<'a, ParseControl>
   ) -> HandlerResult<'b, ParseControl> where 'a: 'b {
     let mut call_handler = |option: &Opt<ID>, name, value| {
-      match handler(&option.id, option, name, value) {
-        // HACK: ensure the string fields are set properly, because coerced
+      match handler(program_name, &option.id, option, name, value) {
+        // HACK: Ensure the string fields are set properly, because coerced
         //       ParseIntError/ParseFloatError will have the string fields blanked.
         Err(ParseError::ArgumentError("", "", kind))
           => Err(ParseError::ArgumentError(name, token, kind)),
@@ -178,7 +178,7 @@ impl<ID: 'static> Opts<ID> {
 
         // Match a suitable option by name (ignoring the first flag character & skipping positional arguments)
         let (name, option) = self.options.iter()
-          .filter(|opt| opt.r#type != OptType::Positional)
+          .filter(|opt| matches!(opt.r#type, OptType::Flag | OptType::Value))
           .find_map(|opt| opt.match_name(option_str, 1).map(|name| (name, opt)))
           .ok_or(ParseError::UnknownOption(option_str))?;
 
@@ -200,8 +200,8 @@ impl<ID: 'static> Opts<ID> {
       } else {
         // Find the next positional argument
         for (i, option) in self.options[state.positional_index..].iter().enumerate() {
-          if option.r#type == OptType::Positional {
-            handler(&option.id, option, option.first_name(), token)?;
+          if matches!(option.r#type, OptType::Positional) {
+            handler(program_name, &option.id, option, option.first_name(), token)?;
             state.positional_index += i + 1;
             return Ok(ParseControl::Continue);
           }

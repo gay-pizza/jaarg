@@ -5,9 +5,12 @@
 
 #![no_std]
 
+mod const_utf8;
+
 include!("option.rs");
 include!("options.rs");
 include!("argparse.rs");
+include!("help.rs");
 
 #[cfg(feature = "std")]
 pub mod std;

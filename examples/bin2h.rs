@@ -203,19 +203,22 @@ pub fn main() -> ExitCode {
   // Read & parse arguments from the command line, store results into the above structure
   enum Arg { Out, Bin, Txt, Whitespace, Help }
   const OPTIONS: Opts<Arg> = Opts::new(&[
+    Opt::flag(Arg::Help, &["--help", "-h"], "Show this help message and exit"),
     Opt::positional_required(Arg::Out, "out", "Path to generated header file"),
     Opt::value(Arg::Bin, &["--bin", "-b"], "data.bin", "Add a binary file"),
     Opt::value(Arg::Txt, &["--txt", "-t"], "text.txt", "Add a text file"),
-    Opt::value(Arg::Whitespace, &["--whitespace"], "\"string\"", "Emitted indentation (Default: \"\\t\")"),
-    Opt::flag(Arg::Help, &["--help", "-h"], "Show this help message and exit"),
+    Opt::value(Arg::Whitespace, &["--whitespace"], "\"  \"", "Emitted indentation (Default: \"\\t\")"),
   ]);
-  match OPTIONS.parse_env(|id, _opt, _name, arg| {
+  match OPTIONS.parse_easy(|program_name, id, _opt, _name, arg| {
     match id {
       Arg::Out => { arguments.out = arg.into(); }
       Arg::Bin => { jobs.push(Job { job_type: JobType::Binary, path: arg.into() }); }
       Arg::Txt => { jobs.push(Job { job_type: JobType::Text, path: arg.into() }); }
       Arg::Whitespace => { arguments.whitespace = arg.into(); }
-      Arg::Help => { todo!(); }
+      Arg::Help => {
+        OPTIONS.print_full_help(program_name);
+        return Ok(ParseControl::Quit);
+      }
     }
     Ok(ParseControl::Continue)
   }) {
