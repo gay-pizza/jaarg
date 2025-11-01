@@ -74,7 +74,7 @@ impl Opts<&'static str> {
   pub fn parse_map<'a, S: AsRef<str> + 'a, I: Iterator<Item = S>>(&self, program_name: &str, args: I,
   error: impl FnOnce(&str, ParseError)) -> ParseMapResult {
     let mut out: BTreeMap<&'static str, String> = BTreeMap::new();
-    match self.parse(&program_name, args, |program_name, id,  _opt, _name, arg| {
+    match self.parse(&program_name, args, |_program_name, id,  _opt, _name, arg| {
       out.insert(id, arg.into());
       Ok(ParseControl::Continue)
     }, error) {

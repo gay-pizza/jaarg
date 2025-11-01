@@ -29,29 +29,38 @@ pub struct Opt<ID> {
 
 // TODO: Improve this interface by making the name field take AsOptIdentifier when const traits are stabilised
 impl<ID> Opt<ID> {
+  #[inline]
+  const fn new(id: ID, names: OptIdentifier, value_name: Option<&'static str>, help_string: &'static str, r#type: OptType, required: bool) -> Self {
+    assert!(match names {
+      OptIdentifier::Single(_) => true,
+      OptIdentifier::Multi(names) => !names.is_empty(),
+    }, "Option names cannot be an empty slice");
+    Self { id, names, value_name, help_string, r#type, required }
+  }
+
   /// A positional argument that is parsed sequentially without being invoked by an option flag
   pub const fn positional(id: ID, name: &'static str, help_string: &'static str) -> Self {
     Self { id, names: OptIdentifier::Single(name), value_name: None, help_string, r#type: OptType::Positional, required: false }
   }
   /// A required positional argument that is parsed sequentially without being invoked by an option flag
   pub const fn positional_required(id: ID, name: &'static str, help_string: &'static str) -> Self {
-    Self { id, names: OptIdentifier::Single(name), value_name: None, help_string, r#type: OptType::Positional, required: true }
+    Self::new(id, OptIdentifier::Single(name), None, help_string, OptType::Positional, true)
   }
   /// A flag-type option that takes no value
   pub const fn flag(id: ID, names: &'static[&'static str], help_string: &'static str) -> Self {
-    Self { id, names: OptIdentifier::Multi(names), value_name: None, help_string, r#type: OptType::Flag, required: false }
+    Self::new(id, OptIdentifier::Multi(names), None, help_string, OptType::Flag, false)
   }
   /// A required flag-type option that takes no value
   pub const fn flag_required(id: ID, names: &'static[&'static str], help_string: &'static str) -> Self {
-    Self { id, names: OptIdentifier::Multi(names), value_name: None, help_string, r#type: OptType::Flag, required: true }
+    Self::new(id, OptIdentifier::Multi(names), None, help_string, OptType::Flag, true)
   }
   /// An option argument that takes a value
   pub const fn value(id: ID, names: &'static[&'static str], value_name: &'static str, help_string: &'static str) -> Self {
-    Self { id, names: OptIdentifier::Multi(names), value_name: Some(value_name), help_string, r#type: OptType::Value, required: false }
+    Self::new(id, OptIdentifier::Multi(names), Some(value_name), help_string, OptType::Value, false)
   }
   /// A required option argument that takes a value
   pub const fn value_required(id: ID, names: &'static[&'static str], value_name: &'static str, help_string: &'static str) -> Self {
-    Self { id, names: OptIdentifier::Multi(names), value_name: Some(value_name), help_string, r#type: OptType::Value, required: true }
+    Self::new(id, OptIdentifier::Multi(names), Some(value_name), help_string, OptType::Value, true)
   }
 }
 
