@@ -24,44 +24,75 @@ pub struct Opt<ID> {
   value_name: Option<&'static str>,
   help_string: &'static str,
   r#type: OptType,
-  required: bool,
+  flags: OptFlag,
+}
+
+#[derive(Debug)]
+struct OptFlag(u8);
+
+impl OptFlag {
+  pub const REQUIRED: Self = OptFlag(1 << 0);
+  pub const HELP: Self     = OptFlag(1 << 1);
+
+  pub const NONE: Self = OptFlag(0);
 }
 
 // TODO: Improve this interface by making the name field take AsOptIdentifier when const traits are stabilised
 impl<ID> Opt<ID> {
   #[inline]
-  const fn new(id: ID, names: OptIdentifier, value_name: Option<&'static str>, help_string: &'static str, r#type: OptType, required: bool) -> Self {
+  const fn new(id: ID, names: OptIdentifier, value_name: Option<&'static str>, help_string: &'static str, r#type: OptType) -> Self {
     assert!(match names {
       OptIdentifier::Single(_) => true,
       OptIdentifier::Multi(names) => !names.is_empty(),
     }, "Option names cannot be an empty slice");
-    Self { id, names, value_name, help_string, r#type, required }
+    Self { id, names, value_name, help_string, r#type, flags: OptFlag::NONE }
   }
 
   /// A positional argument that is parsed sequentially without being invoked by an option flag
   pub const fn positional(id: ID, name: &'static str, help_string: &'static str) -> Self {
-    Self { id, names: OptIdentifier::Single(name), value_name: None, help_string, r#type: OptType::Positional, required: false }
+    Self::new(id, OptIdentifier::Single(name), None, help_string, OptType::Positional)
   }
   /// A required positional argument that is parsed sequentially without being invoked by an option flag
   pub const fn positional_required(id: ID, name: &'static str, help_string: &'static str) -> Self {
-    Self::new(id, OptIdentifier::Single(name), None, help_string, OptType::Positional, true)
+    Self::new(id, OptIdentifier::Single(name), None, help_string, OptType::Positional).with_required()
+  }
+  /// A flag-type option that serves as the interface's help flag
+  pub const fn help_flag(id: ID, names: &'static[&'static str], help_string: &'static str) -> Self {
+    Self::new(id, OptIdentifier::Multi(names), None, help_string, OptType::Flag).with_help_flag()
   }
   /// A flag-type option that takes no value
   pub const fn flag(id: ID, names: &'static[&'static str], help_string: &'static str) -> Self {
-    Self::new(id, OptIdentifier::Multi(names), None, help_string, OptType::Flag, false)
+    Self::new(id, OptIdentifier::Multi(names), None, help_string, OptType::Flag)
   }
   /// A required flag-type option that takes no value
   pub const fn flag_required(id: ID, names: &'static[&'static str], help_string: &'static str) -> Self {
-    Self::new(id, OptIdentifier::Multi(names), None, help_string, OptType::Flag, true)
+    Self::new(id, OptIdentifier::Multi(names), None, help_string, OptType::Flag).with_required()
   }
   /// An option argument that takes a value
   pub const fn value(id: ID, names: &'static[&'static str], value_name: &'static str, help_string: &'static str) -> Self {
-    Self::new(id, OptIdentifier::Multi(names), Some(value_name), help_string, OptType::Value, false)
+    Self::new(id, OptIdentifier::Multi(names), Some(value_name), help_string, OptType::Value)
   }
   /// A required option argument that takes a value
   pub const fn value_required(id: ID, names: &'static[&'static str], value_name: &'static str, help_string: &'static str) -> Self {
-    Self::new(id, OptIdentifier::Multi(names), Some(value_name), help_string, OptType::Value, true)
+    Self::new(id, OptIdentifier::Multi(names), Some(value_name), help_string, OptType::Value).with_required()
   }
+
+  #[inline]
+  const fn with_required(mut self) -> Self {
+    assert!(!self.is_help(), "Help flag cannot be made required");
+    self.flags.0 |= OptFlag::REQUIRED.0;
+    self
+  }
+
+  #[inline]
+  const fn with_help_flag(mut self) -> Self {
+    assert!(matches!(self.r#type, OptType::Flag), "Only flags are allowed to be help options");
+    self.flags.0 |= OptFlag::HELP.0;
+    self
+  }
+
+  #[inline(always)] const fn is_required(&self) -> bool { (self.flags.0 & OptFlag::REQUIRED.0) != 0 }
+  #[inline(always)] const fn is_help(&self) -> bool { (self.flags.0 & OptFlag::HELP.0) != 0 }
 }
 
 impl<ID: 'static> Opt<ID> {

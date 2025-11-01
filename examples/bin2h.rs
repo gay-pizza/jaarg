@@ -203,7 +203,7 @@ pub fn main() -> ExitCode {
   // Read & parse arguments from the command line, store results into the above structure
   enum Arg { Out, Bin, Txt, Whitespace, Help }
   const OPTIONS: Opts<Arg> = Opts::new(&[
-    Opt::flag(Arg::Help, &["--help", "-h"], "Show this help message and exit"),
+    Opt::help_flag(Arg::Help, &["--help", "-h"], "Show this help message and exit"),
     Opt::positional_required(Arg::Out, "out", "Path to generated header file"),
     Opt::value(Arg::Bin, &["--bin", "-b"], "data.bin", "Add a binary file"),
     Opt::value(Arg::Txt, &["--txt", "-t"], "text.txt", "Add a text file"),

@@ -25,7 +25,7 @@ impl<ID: 'static> core::fmt::Display for StandardShortUsageWriter<'_, ID> {
     // Write option parameter arguments
     for option in self.0.options.options.iter()
         .filter(|o| matches!(o.r#type, OptType::Value | OptType::Flag)) {
-      write!(f, " {}", if option.required { '<' } else { '[' })?;
+      write!(f, " {}", if option.is_required() { '<' } else { '[' })?;
       match (option.first_short_name(), option.first_long_name()) {
         (Some(short_name), Some(long_name)) => write!(f, "{short_name}|{long_name}")?,
         (Some(short_name), None) => f.write_str(short_name)?,
@@ -35,14 +35,14 @@ impl<ID: 'static> core::fmt::Display for StandardShortUsageWriter<'_, ID> {
       if let Some(value_name) = option.value_name {
          write!(f, " {value_name}")?;
       }
-      write!(f, "{}", if option.required { '>' } else { ']' })?;
+      write!(f, "{}", if option.is_required() { '>' } else { ']' })?;
     }
 
     // Write positional arguments
     for option in self.0.options.options.iter()
         .filter(|o| matches!(o.r#type, OptType::Positional)) {
       let name = option.first_name();
-      match option.required {
+      match option.is_required() {
         true  => write!(f, " <{name}>")?,
         false => write!(f, " [{name}]")?,
       }
@@ -68,7 +68,7 @@ impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
     // Write optional short options
     let mut first = true;
     for option in self.0.options.options {
-      if let (OptType::Flag | OptType::Value, false) = (option.r#type, option.required) {
+      if let (OptType::Flag | OptType::Value, false) = (option.r#type, option.is_required()) {
         if let Some(c) = option.first_short_name_char() {
           if first {
             write!(f, " [{short_flag}")?;
@@ -85,7 +85,7 @@ impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
     // Write required short options
     first = true;
     for option in self.0.options.options {
-      if let (OptType::Flag | OptType::Value, true) = (option.r#type, option.required) {
+      if let (OptType::Flag | OptType::Value, true) = (option.r#type, option.is_required()) {
         if let Some(c) = option.first_short_name_char() {
           if first {
             write!(f, " <{short_flag}")?;
@@ -103,7 +103,7 @@ impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
     for option in self.0.options.options.iter()
         .filter(|o| matches!(o.r#type, OptType::Positional)) {
       let name = option.first_name();
-      match option.required {
+      match option.is_required() {
         true  => write!(f, " <{name}>")?,
         false => write!(f, " [{name}]")?,
       }

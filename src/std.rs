@@ -56,8 +56,10 @@ impl<ID: 'static> Opts<ID> {
   fn easy_error(&self, program_name: &str, err: ParseError) {
     eprintln!("{program_name}: {err}");
     self.eprint_help::<StandardShortUsageWriter<'_, ID>>(program_name);
-    // TODO: only show when an option is marked help
-    eprintln!("Run '{program_name} --help' to view all available options.");
+    if let Some(help_option) = self.options.iter().find(|o| o.is_help()) {
+      eprintln!("Run '{program_name} {help}' to view all available options.",
+        help = help_option.first_long_name().unwrap_or(help_option.first_name()));
+    }
   }
 }
 
@@ -72,11 +74,17 @@ impl Opts<&'static str> {
   ///
   /// Requires features = [std]
   pub fn parse_map<'a, S: AsRef<str> + 'a, I: Iterator<Item = S>>(&self, program_name: &str, args: I,
-  error: impl FnOnce(&str, ParseError)) -> ParseMapResult {
+    help: impl Fn(&str), error: impl FnOnce(&str, ParseError)
+  ) -> ParseMapResult {
     let mut out: BTreeMap<&'static str, String> = BTreeMap::new();
-    match self.parse(&program_name, args, |_program_name, id,  _opt, _name, arg| {
-      out.insert(id, arg.into());
-      Ok(ParseControl::Continue)
+    match self.parse(&program_name, args, |_program_name, id, opt, _name, arg| {
+      if opt.is_help() {
+        help(program_name);
+        Ok(ParseControl::Quit)
+      } else {
+        out.insert(id, arg.into());
+        Ok(ParseControl::Continue)
+      }
     }, error) {
       ParseResult::ContinueSuccess => ParseMapResult::Map(out),
       ParseResult::ExitSuccess => ParseMapResult::Exit(std::process::ExitCode::SUCCESS),
@@ -85,10 +93,13 @@ impl Opts<&'static str> {
   }
 
   /// Parse arguments from the command line and return the results in a BTreeMap.
+  /// Help and errors are formatted in a standard user-friendly format.
   ///
   /// Requires features = [std]
   pub fn parse_map_easy(&self) -> ParseMapResult {
     let (program_name, argv) = Self::easy_args();
-    self.parse_map(&program_name, argv, |name, e| self.easy_error(name, e))
+    self.parse_map(&program_name, argv,
+      |name| self.print_full_help(name),
+      |name, e| self.easy_error(name, e))
   }
 }

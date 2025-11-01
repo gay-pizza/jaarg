@@ -8,18 +8,13 @@ use std::process::ExitCode;
 
 fn main() -> ExitCode {
   const OPTIONS: Opts<&'static str> = Opts::new(&[
-    Opt::flag("help", &["--help"], "Show this help"),
+    Opt::help_flag("help", &["--help"], "Show this help"),
     Opt::positional("positional", "positional", "Positional argument"),
-    Opt::value("value", &["-v", "--value"], "path", "Value option"),
+    Opt::value("value", &["-v", "--value"], "string", "Value option"),
     Opt::flag("flag", &["-f", "--flag"], "Flag option"),
   ]);
 
   let map = match OPTIONS.parse_map_easy() {
-    // TODO: There should probably be a more efficient way to make jaarg handle help for us
-    ParseMapResult::Map(map) if map.contains_key("help") => {
-      OPTIONS.print_full_help("btreemap");
-      return ExitCode::SUCCESS;
-    }
     ParseMapResult::Map(map) => map,
     ParseMapResult::Exit(code) => { return code; }
   };
