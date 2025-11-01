@@ -110,6 +110,11 @@ impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
     }
     writeln!(f)?;
 
+    if let Some(description) = self.0.options.description {
+      writeln!(f)?;
+      writeln!(f, "{description}")?;
+    }
+
     fn calculate_left_pad<ID: 'static>(option: &Opt<ID>) -> usize {
       (match option.names {
         OptIdentifier::Single(name) => name.chars().count(),

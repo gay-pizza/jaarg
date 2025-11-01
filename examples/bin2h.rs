@@ -208,7 +208,8 @@ pub fn main() -> ExitCode {
     Opt::value(Arg::Bin, &["--bin", "-b"], "data.bin").help_text("Add a binary file"),
     Opt::value(Arg::Txt, &["--txt", "-t"], "text.txt").help_text("Add a text file"),
     Opt::value(Arg::Whitespace, &["--whitespace"], "\"  \"").help_text("Emitted indentation (Default: \"\\t\")"),
-  ]);
+  ]).with_description("Convert one or more binary and text file(s) to a C header file,\n\
+                       as arrays and C strings respectively.");
   match OPTIONS.parse_easy(|program_name, id, _opt, _name, arg| {
     match id {
       Arg::Out => { arguments.out = arg.into(); }
