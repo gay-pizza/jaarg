@@ -7,3 +7,17 @@ description = "It can parse your arguments you should use it it's called jaarg"
 [features]
 default = ["std"]
 std = []
+
+[profile.release]
+lto = "thin"
+strip = "symbols"
+
+[profile.release-debuginfo]
+inherits = "release"
+strip = "none"
+debug = 1
+
+[profile.dev-fast]
+inherits = "dev"
+strip = "debuginfo"
+debug = 0
