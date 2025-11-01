@@ -6,6 +6,7 @@
 #![no_std]
 
 mod const_utf8;
+mod ordered_bitset;
 
 include!("option.rs");
 include!("options.rs");

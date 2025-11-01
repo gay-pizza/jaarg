@@ -37,6 +37,7 @@ pub enum ParseError<'a> {
   //TODO
   //Exclusive(&'static str, &'a str),
   RequiredPositional(&'static str),
+  RequiredParameter(&'static str),
 }
 
 /// The type of parsing error
@@ -63,6 +64,7 @@ impl core::fmt::Display for ParseError<'_> {
         => write!(f, "Argument for option '{o}' cannot be empty"),
       //Self::Exclusive(l, r) => write!(f, "Argument {l}: not allowed with argument {r}"),
       Self::RequiredPositional(o) => write!(f, "Missing required positional argument '{o}'"),
+      Self::RequiredParameter(o) => write!(f, "Missing required option '{o}'"),
     }
   }
 }
@@ -92,17 +94,21 @@ impl From<core::num::ParseFloatError> for ParseError<'_> {
 
 impl core::error::Error for ParseError<'_> {}
 
+type RequiredParamsBitSet = ordered_bitset::OrderedBitSet<BitSetType, BITSET_SLOTS>;
+
 /// Internal state tracked by the parser
 struct ParserState<ID: 'static> {
   positional_index: usize,
   expects_arg: Option<(&'static str, &'static Opt<ID>)>,
+  required_param_presences: RequiredParamsBitSet,
 }
 
 impl<ID> Default for ParserState<ID> {
   fn default() -> Self {
     Self {
       positional_index: 0,
-      expects_arg: None
+      expects_arg: None,
+      required_param_presences: Default::default(),
     }
   }
 }
@@ -134,13 +140,21 @@ impl<ID: 'static> Opts<ID> {
       return ParseResult::ExitError;
     }
 
-    //TODO: Ensure all required parameter arguments have been provided
-
-    // Ensure that all required positional arguments have been provided
-    for option in self.options[state.positional_index..].iter() {
-      if matches!(option.r#type, OptType::Positional) && option.is_required() {
-        error(program_name, ParseError::RequiredPositional(option.first_name()));
-        return ParseResult::ExitError;
+    // Ensure that all required arguments have been provided
+    let mut required_flag_idx = 0;
+    for (i, option) in self.options.iter().enumerate() {
+      match option.r#type {
+        OptType::Positional => if i >= state.positional_index && option.is_required() {
+          error(program_name, ParseError::RequiredPositional(option.first_name()));
+          return ParseResult::ExitError;
+        }
+        OptType::Flag | OptType::Value => if option.is_required() {
+          if !state.required_param_presences.get(required_flag_idx) {
+            error(program_name, ParseError::RequiredParameter(option.first_name()));
+            return ParseResult::ExitError;
+          }
+          required_flag_idx += 1;
+        }
       }
     }
 
@@ -176,11 +190,26 @@ impl<ID: 'static> Opts<ID> {
         let (option_str, value_str) = token.split_once("=")
           .map_or((token, None), |(k, v)| (k, Some(v)));
 
+        // Keep track of how many required options we've seen
+        let mut required_idx = 0;
+
         // Match a suitable option by name (ignoring the first flag character & skipping positional arguments)
         let (name, option) = self.options.iter()
-          .filter(|opt| matches!(opt.r#type, OptType::Flag | OptType::Value))
-          .find_map(|opt| opt.match_name(option_str, 1).map(|name| (name, opt)))
-          .ok_or(ParseError::UnknownOption(option_str))?;
+          .filter(|opt| matches!(opt.r#type, OptType::Flag | OptType::Value)) .find_map(|opt| {
+            if let Some(name) = opt.match_name(option_str, 1) {
+              Some((name, opt))
+            } else {
+              if opt.is_required() {
+                required_idx += 1
+              }
+              None
+            }
+          }) .ok_or(ParseError::UnknownOption(option_str))?;
+
+        // Mark required option as visited
+        if option.is_required() {
+          state.required_param_presences.insert(required_idx, true);
+        }
 
         match (&option.r#type, value_str) {
           // Call handler for flag-only options
