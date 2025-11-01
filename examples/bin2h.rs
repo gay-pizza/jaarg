@@ -203,11 +203,11 @@ pub fn main() -> ExitCode {
   // Read & parse arguments from the command line, store results into the above structure
   enum Arg { Out, Bin, Txt, Whitespace, Help }
   const OPTIONS: Opts<Arg> = Opts::new(&[
-    Opt::help_flag(Arg::Help, &["--help", "-h"], "Show this help message and exit"),
-    Opt::positional_required(Arg::Out, "out", "Path to generated header file"),
-    Opt::value(Arg::Bin, &["--bin", "-b"], "data.bin", "Add a binary file"),
-    Opt::value(Arg::Txt, &["--txt", "-t"], "text.txt", "Add a text file"),
-    Opt::value(Arg::Whitespace, &["--whitespace"], "\"  \"", "Emitted indentation (Default: \"\\t\")"),
+    Opt::help_flag(Arg::Help, &["--help", "-h"]).help_text("Show this help message and exit"),
+    Opt::positional(Arg::Out, "out").help_text("Path to generated header file").required(),
+    Opt::value(Arg::Bin, &["--bin", "-b"], "data.bin").help_text("Add a binary file"),
+    Opt::value(Arg::Txt, &["--txt", "-t"], "text.txt").help_text("Add a text file"),
+    Opt::value(Arg::Whitespace, &["--whitespace"], "\"  \"").help_text("Emitted indentation (Default: \"\\t\")"),
   ]);
   match OPTIONS.parse_easy(|program_name, id, _opt, _name, arg| {
     match id {

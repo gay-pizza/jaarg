@@ -134,10 +134,12 @@ impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
       }
 
       // Write positional argument line
-      writeln!(f, "  {name} {:.<width$} {help_text}", "",
-        name = option.first_name(),
-        help_text = option.help_string,
-        width = align_width - calculate_left_pad(option))?;
+      write!(f, "  {name}", name = option.first_name())?;
+      if let Some(help_text) = option.help_string {
+        write!(f, " {:.<width$} {help_text}", "",
+          width = align_width - calculate_left_pad(option))?;
+      }
+      writeln!(f)?;
     }
 
     // Write option parameter argument descriptions
@@ -167,9 +169,11 @@ impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
       }
 
       // Write padding and help text
-      writeln!(f, " {:.<width$} {help_text}", "",
-        help_text = option.help_string,
-        width = align_width - calculate_left_pad(option))?;
+      if let Some(help_text) = option.help_string {
+        write!(f, " {:.<width$} {help_text}", "",
+          width = align_width - calculate_left_pad(option))?;
+      }
+      writeln!(f)?;
     }
 
     Ok(())
