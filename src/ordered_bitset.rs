@@ -102,6 +102,8 @@ mod tests {
   #[test]
   fn test_ordered_bitset() {
     fn harness<T: OrderedBitSetStorage, const S: usize>(indices: &[usize]) {
+      assert_eq!(OrderedBitSet::<T, S>::CAPACITY, 128);
+
       let mut bitset = OrderedBitSet::<T, S>::new();
       for &index in indices {
         bitset.insert(index, true);
