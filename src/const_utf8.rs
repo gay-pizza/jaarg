@@ -24,7 +24,7 @@ impl<'a> CharIterator<'a> {
 
 impl CharIterator<'_> {
   /// Gets a count of the number of Unicode characters (not graphemes) in the string.
-  pub(crate) const fn count(self) -> usize {
+  pub(crate) const fn count(&self) -> usize {
     let len = self.bytes.len();
     let mut count = 0;
     let mut i = 0;
@@ -121,5 +121,21 @@ impl CharIterator<'_> {
     // Advance the internal character index and return success
     self.index += len;
     Some(result)
+  }
+}
+
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test() {
+    for s in ["pizza", "/ˈpitt͡sə/", "pizzaskjærer", "🍕", "比薩", "ピザ", "Ćevapi", "🏳️‍⚧️"] {
+      let mut it = CharIterator::from(s);
+      assert_eq!(it.count(), s.chars().count());
+      s.chars().for_each(|c| assert_eq!(it.next(), Some(c)));
+      assert_eq!(it.next(), None);
+    }
   }
 }
