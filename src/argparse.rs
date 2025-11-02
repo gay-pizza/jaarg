@@ -169,7 +169,7 @@ impl<ID: 'static> Opts<ID> {
         // HACK: Ensure the string fields are set properly, because coerced
         //       ParseIntError/ParseFloatError will have the string fields blanked.
         Err(ParseError::ArgumentError("", "", kind))
-          => Err(ParseError::ArgumentError(name, token, kind)),
+          => Err(ParseError::ArgumentError(name, value, kind)),
         Err(err) => Err(err),
         Ok(ctl) => Ok(ctl),
       }

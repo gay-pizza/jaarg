@@ -52,7 +52,8 @@ println!("{file:?} -> {out:?} (number: {number:?})",
 
 ### Changelog ###
 
-<!-- main: -->
+main:
+ * Fixed incorrect error message format for coerced parsing errors.
 
 v0.1.0:
  * Initial release.
