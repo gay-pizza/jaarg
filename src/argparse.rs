@@ -94,8 +94,6 @@ impl From<core::num::ParseFloatError> for ParseError<'_> {
 
 impl core::error::Error for ParseError<'_> {}
 
-type RequiredParamsBitSet = ordered_bitset::OrderedBitSet<BitSetType, BITSET_SLOTS>;
-
 /// Internal state tracked by the parser
 struct ParserState<ID: 'static> {
   positional_index: usize,
@@ -195,7 +193,7 @@ impl<ID: 'static> Opts<ID> {
 
         // Match a suitable option by name (ignoring the first flag character & skipping positional arguments)
         let (name, option) = self.options.iter()
-          .filter(|opt| matches!(opt.r#type, OptType::Flag | OptType::Value)) .find_map(|opt| {
+          .filter(|opt| matches!(opt.r#type, OptType::Flag | OptType::Value)).find_map(|opt| {
             if let Some(name) = opt.match_name(option_str, 1) {
               Some((name, opt))
             } else {
@@ -204,7 +202,7 @@ impl<ID: 'static> Opts<ID> {
               }
               None
             }
-          }) .ok_or(ParseError::UnknownOption(option_str))?;
+          }).ok_or(ParseError::UnknownOption(option_str))?;
 
         // Mark required option as visited
         if option.is_required() {

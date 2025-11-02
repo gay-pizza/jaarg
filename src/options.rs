@@ -13,10 +13,10 @@ pub struct Opts<ID: 'static> {
   description: Option<&'static str>,
 }
 
-type BitSetType = u32;
-const BITSET_SLOTS: usize = 4;
+type RequiredParamsBitSet = ordered_bitset::OrderedBitSet<u32, 4>;
+
 /// The maximum amount of allowed required non-positional options.
-pub const MAX_REQUIRED_OPTIONS: usize = BitSetType::BITS as usize * BITSET_SLOTS;
+pub const MAX_REQUIRED_OPTIONS: usize = RequiredParamsBitSet::CAPACITY;
 
 impl<ID: 'static> Opts<ID> {
   /// Build argument parser options with the default flag character of '-'
@@ -30,7 +30,7 @@ impl<ID: 'static> Opts<ID> {
       }
       opt_idx += 1;
     }
-    assert!(num_required_parameters <= MAX_REQUIRED_OPTIONS,
+    assert!(num_required_parameters <= RequiredParamsBitSet::CAPACITY,
       "More than 128 non-positional required option entries is not supported at this time");
 
     Self {
