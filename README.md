@@ -22,12 +22,15 @@ let mut number = 0;
 enum Arg { Help, Number, File, Out }
 const OPTIONS: Opts<Arg> = Opts::new(&[
   Opt::help_flag(Arg::Help, &["-h", "--help"]).help_text("Show this help and exit."),
-  Opt::value(Arg::Number, &["-n", "--number"], "value").help_text("Optionally specify a number (default: 0)"),
-  Opt::positional(Arg::File, "file").required().help_text("Input file."),
-  Opt::positional(Arg::Out, "out").help_text("Output destination (optional).")
+  Opt::value(Arg::Number, &["-n", "--number"], "value")
+    .help_text("Optionally specify a number (default: 0)"),
+  Opt::positional(Arg::File, "file").required()
+    .help_text("Input file."),
+  Opt::positional(Arg::Out, "out")
+    .help_text("Output destination (optional).")
 ]).with_description("My simple utility.");
 
-// Parse the arguments
+// Parse command-line arguments from `std::env::args()`
 match OPTIONS.parse_easy(|program_name, id, _opt, _name, arg| {
   match id {
     Arg::Help => {
@@ -54,6 +57,7 @@ println!("{file:?} -> {out:?} (number: {number:?})",
 
 main:
  * Fixed incorrect error message format for coerced parsing errors.
+ * Added basic example.
 
 v0.1.0:
  * Initial release.
