@@ -6,15 +6,15 @@
 /// Enum describing the result of parsing arguments, and how the program should behave.
 #[derive(Debug)]
 pub enum ParseResult {
-  /// Parsing succeeded and program execution should continue
+  /// Parsing succeeded and program execution should continue.
   ContinueSuccess,
-  /// Parsing succeeded and program should exit with success (eg; std::process::ExitCode::SUCCESS)
+  /// Parsing succeeded and program should exit with success (eg; [std::process::ExitCode::SUCCESS]).
   ExitSuccess,
-  /// There was an error while parsing and program should exit with failure (eg; std::process::ExitCode::FAILURE)
+  /// There was an error while parsing and program should exit with failure (eg; [std::process::ExitCode::FAILURE]).
   ExitError,
 }
 
-/// Execution control for the parser handler
+/// Execution control for parser handlers.
 pub enum ParseControl {
   /// Continue parsing arguments
   Continue,
@@ -24,7 +24,7 @@ pub enum ParseControl {
   Quit,
 }
 
-/// Result type used by the handler passed to the parser
+/// Result type used by the handler passed to the parser.
 type HandlerResult<'a, T> = core::result::Result<T, ParseError<'a>>;
 
 #[derive(Debug)]
@@ -69,7 +69,7 @@ impl core::fmt::Display for ParseError<'_> {
   }
 }
 
-/// Convenience coercion for dealing with integer parsing errors
+/// Convenience coercion for dealing with integer parsing errors.
 impl From<core::num::ParseIntError> for ParseError<'_> {
   fn from(err: core::num::ParseIntError) -> Self {
     use core::num::IntErrorKind;
@@ -83,7 +83,7 @@ impl From<core::num::ParseIntError> for ParseError<'_> {
   }
 }
 
-/// Convenience coercion for dealing with floating-point parsing errors
+/// Convenience coercion for dealing with floating-point parsing errors.
 impl From<core::num::ParseFloatError> for ParseError<'_> {
   fn from(_err: core::num::ParseFloatError) -> Self {
     // HACK: The empty option & argument fields will be fixed up by the parser
@@ -94,7 +94,7 @@ impl From<core::num::ParseFloatError> for ParseError<'_> {
 
 impl core::error::Error for ParseError<'_> {}
 
-/// Internal state tracked by the parser
+/// Internal state tracked by the parser.
 struct ParserState<ID: 'static> {
   positional_index: usize,
   expects_arg: Option<(&'static str, &'static Opt<ID>)>,
@@ -112,7 +112,7 @@ impl<ID> Default for ParserState<ID> {
 }
 
 impl<ID: 'static> Opts<ID> {
-  /// Parse an iterator of strings as arguments
+  /// Parses an iterator of strings as argument tokens.
   pub fn parse<'a, S: AsRef<str> + 'a, I: Iterator<Item = S>>(&self, program_name: &str, args: I,
     mut handler: impl FnMut(&str, &ID, &Opt<ID>, &str, &str) -> HandlerResult<'a, ParseControl>,
     error: impl FnOnce(&str, ParseError),

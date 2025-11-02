@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-/// Static structure that contains instructions for parsing command-line arguments
+/// Static structure that contains instructions for parsing command-line arguments.
 pub struct Opts<ID: 'static> {
   /// List of options
   options: &'static[Opt<ID>],
@@ -19,7 +19,7 @@ type RequiredParamsBitSet = ordered_bitset::OrderedBitSet<u32, 4>;
 pub const MAX_REQUIRED_OPTIONS: usize = RequiredParamsBitSet::CAPACITY;
 
 impl<ID: 'static> Opts<ID> {
-  /// Build argument parser options with the default flag character of '-'
+  /// Build argument parser options with the default flag character of '-'.
   pub const fn new(options: &'static[Opt<ID>]) -> Self {
     // Validate passed options
     let mut opt_idx = 0;

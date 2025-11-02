@@ -16,7 +16,7 @@ enum OptIdentifier {
   Multi(&'static[&'static str]),
 }
 
-/// Represents an option argument or positional argument to be parsed
+/// Represents an option argument or positional argument to be parsed.
 #[derive(Debug)]
 pub struct Opt<ID> {
   id: ID,
@@ -48,20 +48,20 @@ impl<ID> Opt<ID> {
     Self { id, names, value_name, help_string: None, r#type, flags: OptFlag::NONE }
   }
 
-  /// A positional argument that is parsed sequentially without being invoked by an option flag
+  /// A positional argument that is parsed sequentially without being invoked by an option flag.
   pub const fn positional(id: ID, name: &'static str) -> Self {
     Self::new(id, OptIdentifier::Single(name), None, OptType::Positional)
   }
-  /// A flag-type option that serves as the interface's help flag
+  /// A flag-type option that serves as the interface's help flag.
   pub const fn help_flag(id: ID, names: &'static[&'static str]) -> Self {
     Self::new(id, OptIdentifier::Multi(names), None, OptType::Flag)
       .with_help_flag()
   }
-  /// A flag-type option, takes no value
+  /// A flag-type option, takes no value.
   pub const fn flag(id: ID, names: &'static[&'static str]) -> Self {
     Self::new(id, OptIdentifier::Multi(names), None, OptType::Flag)
   }
-  /// An option argument that takes a value
+  /// An option argument that takes a value.
   pub const fn value(id: ID, names: &'static[&'static str], value_name: &'static str) -> Self {
     Self::new(id, OptIdentifier::Multi(names), Some(value_name), OptType::Value)
   }
@@ -93,7 +93,7 @@ impl<ID> Opt<ID> {
 }
 
 impl<ID: 'static> Opt<ID> {
-  /// Get the first name of the option
+  /// Get the first name of the option.
   const fn first_name(&self) -> &str {
     match self.names {
       OptIdentifier::Single(name) => name,
@@ -101,7 +101,7 @@ impl<ID: 'static> Opt<ID> {
     }
   }
 
-  /// Get the first long option name, if one exists
+  /// Get the first long option name, if one exists.
   const fn first_long_name(&self) -> Option<&'static str> {
     match self.names {
       OptIdentifier::Single(name) => if name.len() >= 3 { Some(name) } else { None },
@@ -119,7 +119,7 @@ impl<ID: 'static> Opt<ID> {
     }
   }
 
-  /// Get the first short option name, if one exists
+  /// Get the first short option name, if one exists.
   const fn first_short_name(&self) -> Option<&'static str> {
     const fn predicate(name: &str) -> bool {
       let mut chars = const_utf8::CharIterator::from(name);
@@ -148,7 +148,7 @@ impl<ID: 'static> Opt<ID> {
     }
   }
 
-  /// Get the first applicable short option's flag character, if one exists
+  /// Get the first applicable short option's flag character, if one exists.
   const fn first_short_name_char(&self) -> Option<char> {
     const fn predicate(name: &str) -> Option<char> {
       let mut chars = const_utf8::CharIterator::from(name);
@@ -163,7 +163,7 @@ impl<ID: 'static> Opt<ID> {
     }
     match self.names {
       OptIdentifier::Single(name) => predicate(&name),
-      // Can be replaced with `find_map` once iterators are const fn
+      // Can be replaced with `find_map` once iterators are const fn.
       OptIdentifier::Multi(names) => {
         let mut i = 0;
         while i < names.len() {
@@ -177,7 +177,7 @@ impl<ID: 'static> Opt<ID> {
     }
   }
 
-  /// Search for a matching name in the option, offset allows to skip the first characters in the comparison
+  /// Search for a matching name in the option, offset allows to skip the first `n = offset` characters in the comparison.
   fn match_name(&self, string: &str, offset: usize) -> Option<&'static str> {
     match self.names {
       OptIdentifier::Single(name) =>
