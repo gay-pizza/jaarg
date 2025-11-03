@@ -1,6 +1,6 @@
 [package]
 name = "jaarg"
-version = "0.1.0"
+version = "0.1.1"
 license = "MIT"
 edition = "2021"
 description = "It can parse your arguments you should use it it's called jaarg"

@@ -55,8 +55,11 @@ println!("{file:?} -> {out:?} (number: {number:?})",
 
 ### Changelog ###
 
-main:
+<!-- main: -->
+
+v0.1.1:
  * Fixed incorrect error message format for coerced parsing errors.
+ * Cleaned up docstring formatting.
  * Added basic example.
 
 v0.1.0:
