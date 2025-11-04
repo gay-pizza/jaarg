@@ -23,7 +23,7 @@ impl<ID: 'static> core::fmt::Display for StandardShortUsageWriter<'_, ID> {
     write!(f, "Usage: {}", self.0.program_name)?;
 
     // Write option parameter arguments
-    for option in self.0.options.options.iter()
+    for option in self.0.options.iter()
         .filter(|o| matches!(o.r#type, OptType::Value | OptType::Flag)) {
       write!(f, " {}", if option.is_required() { '<' } else { '[' })?;
       match (option.first_short_name(), option.first_long_name()) {
@@ -39,7 +39,7 @@ impl<ID: 'static> core::fmt::Display for StandardShortUsageWriter<'_, ID> {
     }
 
     // Write positional arguments
-    for option in self.0.options.options.iter()
+    for option in self.0.options.iter()
         .filter(|o| matches!(o.r#type, OptType::Positional)) {
       let name = option.first_name();
       match option.is_required() {
@@ -100,7 +100,7 @@ impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
     }
 
     // Write positional arguments
-    for option in self.0.options.options.iter()
+    for option in self.0.options.iter()
         .filter(|o| matches!(o.r#type, OptType::Positional)) {
       let name = option.first_name();
       match option.is_required() {
@@ -124,12 +124,12 @@ impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
     }
 
 	  // Determine the alignment width from the longest option parameter
-    let align_width = 2 + self.0.options.options.iter()
+    let align_width = 2 + self.0.options.iter()
       .map(|o| calculate_left_pad(o)).max().unwrap_or(0);
 
     // Write positional argument descriptions
     first = true;
-    for option in self.0.options.options.iter()
+    for option in self.0.options.iter()
         .filter(|o| matches!(o.r#type, OptType::Positional)) {
       if first {
         // Write separator and positional section header
@@ -149,7 +149,7 @@ impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
 
     // Write option parameter argument descriptions
     first = true;
-    for option in self.0.options.options.iter()
+    for option in self.0.options.iter()
         .filter(|o| matches!(o.r#type, OptType::Flag | OptType::Value)) {
       if first {
         // Write separator and options section header

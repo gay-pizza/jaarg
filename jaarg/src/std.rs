@@ -56,7 +56,7 @@ impl<ID: 'static> Opts<ID> {
   fn easy_error(&self, program_name: &str, err: ParseError) {
     eprintln!("{program_name}: {err}");
     self.eprint_help::<StandardShortUsageWriter<'_, ID>>(program_name);
-    if let Some(help_option) = self.options.iter().find(|o| o.is_help()) {
+    if let Some(help_option) = self.help_option() {
       eprintln!("Run '{program_name} {help}' to view all available options.",
         help = help_option.first_long_name().unwrap_or(help_option.first_name()));
     }

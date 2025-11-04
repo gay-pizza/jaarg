@@ -40,15 +40,35 @@ impl<ID: 'static> Opts<ID> {
     }
   }
 
-  /// Set the recognised flag/option characters.
+  /// Sets the recognised flag/option characters.
+  #[inline]
   pub const fn with_flag_chars(mut self, flag_chars: &'static str) -> Self {
     self.flag_chars = flag_chars;
     self
   }
 
-  /// Set the description of the program, available to help writers.
+  /// Sets the description of the program, available to help writers.
+  #[inline]
   pub const fn with_description(mut self, description: &'static str) -> Self {
     self.description = Some(description);
     self
+  }
+
+  /// Gets the first available help option if one exists.
+  pub const fn help_option(&self) -> Option<&'static Opt<ID>> {
+    let mut i = 0;
+    while i < self.options.len() {
+      if self.options[i].is_help() {
+        return Some(&self.options[i]);
+      }
+      i += 1;
+    }
+    None
+  }
+
+  /// Gets an iterator over the parser's options.
+  #[inline]
+  pub fn iter(&self) -> core::slice::Iter<'static, Opt<ID>> {
+    self.options.iter()
   }
 }

@@ -140,7 +140,7 @@ impl<ID: 'static> Opts<ID> {
 
     // Ensure that all required arguments have been provided
     let mut required_flag_idx = 0;
-    for (i, option) in self.options.iter().enumerate() {
+    for (i, option) in self.iter().enumerate() {
       match option.r#type {
         OptType::Positional => if i >= state.positional_index && option.is_required() {
           error(program_name, ParseError::RequiredPositional(option.first_name()));
@@ -192,7 +192,7 @@ impl<ID: 'static> Opts<ID> {
         let mut required_idx = 0;
 
         // Match a suitable option by name (ignoring the first flag character & skipping positional arguments)
-        let (name, option) = self.options.iter()
+        let (name, option) = self.iter()
           .filter(|opt| matches!(opt.r#type, OptType::Flag | OptType::Value)).find_map(|opt| {
             if let Some(name) = opt.match_name(option_str, 1) {
               Some((name, opt))
