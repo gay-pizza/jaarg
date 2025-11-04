@@ -3,21 +3,21 @@
  * SPDX-License-Identifier: MIT
  */
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 enum OptType {
   Positional,
   Flag,
   Value,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum OptIdentifier {
   Single(&'static str),
   Multi(&'static[&'static str]),
 }
 
 /// Represents an option argument or positional argument to be parsed.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Opt<ID> {
   id: ID,
   names: OptIdentifier,
@@ -27,7 +27,7 @@ pub struct Opt<ID> {
   flags: OptFlag,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct OptFlag(u8);
 
 impl OptFlag {
@@ -88,13 +88,20 @@ impl<ID> Opt<ID> {
     self
   }
 
-  #[inline(always)] const fn is_required(&self) -> bool { (self.flags.0 & OptFlag::REQUIRED.0) != 0 }
-  #[inline(always)] const fn is_help(&self) -> bool { (self.flags.0 & OptFlag::HELP.0) != 0 }
+  /// Returns true if this is a required positional argument, or required option argument.
+  #[inline(always)] pub const fn is_required(&self) -> bool {
+    (self.flags.0 & OptFlag::REQUIRED.0) != 0
+  }
+
+  /// Returns true if this is the help option.
+  #[inline(always)] pub const fn is_help(&self) -> bool {
+    (self.flags.0 & OptFlag::HELP.0) != 0
+  }
 }
 
 impl<ID: 'static> Opt<ID> {
   /// Get the first name of the option.
-  const fn first_name(&self) -> &str {
+  pub const fn first_name(&self) -> &str {
     match self.names {
       OptIdentifier::Single(name) => name,
       OptIdentifier::Multi(names) => names.first().unwrap(),
@@ -102,7 +109,7 @@ impl<ID: 'static> Opt<ID> {
   }
 
   /// Get the first long option name, if one exists.
-  const fn first_long_name(&self) -> Option<&'static str> {
+  pub const fn first_long_name(&self) -> Option<&'static str> {
     match self.names {
       OptIdentifier::Single(name) => if name.len() >= 3 { Some(name) } else { None },
       // Can be replaced with `find_map` once iterators are const fn
@@ -179,11 +186,140 @@ impl<ID: 'static> Opt<ID> {
 
   /// Search for a matching name in the option, offset allows to skip the first `n = offset` characters in the comparison.
   fn match_name(&self, string: &str, offset: usize) -> Option<&'static str> {
+    let rhs = &string[offset..];
+    if rhs.is_empty() {
+      return None;
+    }
     match self.names {
       OptIdentifier::Single(name) =>
-        if name[offset..] == string[offset..] { Some(name) } else { None },
+        if &name[offset..] == rhs { Some(name) } else { None },
       OptIdentifier::Multi(names) =>
-        names.iter().find(|name| name[offset..] == string[offset..]).map(|v| &**v),
+        names.iter().find(|name| &name[offset..] == rhs).map(|v| &**v),
     }
+  }
+}
+
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  #[should_panic(expected = "Option names cannot be an empty slice")]
+  fn test_opt_new_empty_names_disallowed() {
+    Opt::new((), OptIdentifier::Multi(&[]), None, OptType::Positional);
+  }
+
+  #[test]
+  fn test_opt_public_initialisers() {
+    assert_eq!(Opt::positional((), "name"), Opt { id: (),
+      names: OptIdentifier::Single("name"), value_name: None, help_string: None,
+      r#type: OptType::Positional, flags: OptFlag::NONE,
+    });
+    assert_eq!(Opt::help_flag((), &["name"]), Opt { id: (),
+      names: OptIdentifier::Multi(&["name"]), value_name: None, help_string: None,
+      r#type: OptType::Flag, flags: OptFlag::HELP,
+    });
+    assert_eq!(Opt::flag((), &["name"]), Opt { id: (),
+      names: OptIdentifier::Multi(&["name"]), value_name: None, help_string: None,
+      r#type: OptType::Flag, flags: OptFlag::NONE,
+    });
+    assert_eq!(Opt::value((), &["name"], "value"), Opt { id: (),
+      names: OptIdentifier::Multi(&["name"]), value_name: Some("value"), help_string: None,
+      r#type: OptType::Value, flags: OptFlag::NONE,
+    });
+  }
+
+  #[test]
+  fn test_opt_valid_with_chains() {
+    assert_eq!(Opt::positional((), "").required(), Opt { id: (),
+      names: OptIdentifier::Single(""), value_name: None, help_string: None,
+      r#type: OptType::Positional, flags: OptFlag::REQUIRED,
+    });
+    assert_eq!(Opt::positional((), "").required().help_text("help string"), Opt { id: (),
+      names: OptIdentifier::Single(""), value_name: None, help_string: Some("help string"),
+      r#type: OptType::Positional, flags: OptFlag::REQUIRED,
+    });
+    assert_eq!(Opt::positional((), "").help_text("help string"), Opt { id: (),
+      names: OptIdentifier::Single(""), value_name: None, help_string: Some("help string"),
+      r#type: OptType::Positional, flags: OptFlag::NONE,
+    });
+  }
+
+  #[test]
+  #[should_panic(expected = "Help flag cannot be made required")]
+  fn test_opt_required_help_disallowed() {
+    Opt::help_flag((), &["-h", "--help"]).required();
+  }
+
+  #[test]
+  #[should_panic(expected = "Only flags are allowed to be help options")]
+  fn test_opt_positional_with_help_flag_disallowed() {
+    Opt::positional((), "").with_help_flag();
+  }
+
+  #[test]
+  #[should_panic(expected = "Only flags are allowed to be help options")]
+  fn test_opt_value_with_help_flag_disallowed() {
+    Opt::value((), &[""], "").with_help_flag();
+  }
+
+  #[test]
+  fn test_opt_flag_getters() {
+    const HELP: Opt<()> = Opt::help_flag((), &[""]);
+    const REQUIRED: Opt<()> = Opt::positional((), "").required();
+    assert!(HELP.is_help());
+    assert!(!HELP.is_required());
+    assert!(REQUIRED.is_required());
+    assert!(!REQUIRED.is_help());
+  }
+
+  #[test]
+  fn test_opt_first_name() {
+    assert_eq!(Opt::positional((), "first").first_name(), "first");
+    assert_eq!(Opt::flag((), &["first", "second"]).first_name(), "first");
+  }
+
+  #[test]
+  fn test_opt_first_long_name() {
+    assert_eq!(Opt::positional((), "--long").first_long_name(), Some("--long"));
+    assert_eq!(Opt::positional((), "-long").first_long_name(), Some("-long"));
+    assert_eq!(Opt::positional((), "--l").first_long_name(), Some("--l"));
+    assert_eq!(Opt::positional((), "-s").first_long_name(), None);
+    assert_eq!(Opt::flag((), &["-s", "--long"]).first_long_name(), Some("--long"));
+  }
+
+  #[test]
+  fn test_opt_first_short_name() {
+    assert_eq!(Opt::positional((), "-s").first_short_name(), Some("-s"));
+    assert_eq!(Opt::positional((), "--long").first_short_name(), None);
+    assert_eq!(Opt::positional((), "--").first_short_name(), None);
+    assert_eq!(Opt::positional((), "-lo").first_short_name(), None);
+    assert_eq!(Opt::positional((), "--l").first_short_name(), None);
+    assert_eq!(Opt::flag((), &["--long", "-s"]).first_short_name(), Some("-s"));
+  }
+
+  #[test]
+  fn test_opt_first_short_name_char() {
+    assert_eq!(Opt::positional((), "-s").first_short_name_char(), Some('s'));
+    assert_eq!(Opt::positional((), "--long").first_short_name_char(), None);
+    assert_eq!(Opt::positional((), "--").first_short_name_char(), None);
+    assert_eq!(Opt::positional((), "-lo").first_short_name_char(), None);
+    assert_eq!(Opt::positional((), "--l").first_short_name_char(), None);
+    assert_eq!(Opt::flag((), &["--long", "-s"]).first_short_name_char(), Some('s'));
+  }
+
+  #[test]
+  fn test_opt_match_name() {
+    assert_eq!(Opt::flag((), &["--one", "--two", "--threee", "--three"])
+      .match_name("--three", 0), Some("--three"));
+    assert_eq!(Opt::flag((), &["--one", "--two", "--threee"])
+      .match_name("--three", 0), None);
+    assert_eq!(Opt::flag((), &["/one", "/two", "/three", "/four"])
+      .match_name("-three", 1), Some("/three"));
+    assert_eq!(Opt::positional((), "-s").match_name("-s", 1), Some("-s"));
+
+    assert_eq!(Opt::flag((), &["-x", "-s"]).match_name("-s", 2), None);
+    assert_eq!(Opt::positional((), "-x").match_name("-s", 2), None);
   }
 }
