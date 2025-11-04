@@ -4,6 +4,7 @@
  */
 
 /// Static structure that contains instructions for parsing command-line arguments.
+#[derive(Debug, PartialEq)]
 pub struct Opts<ID: 'static> {
   /// List of options
   options: &'static[Opt<ID>],
@@ -70,5 +71,53 @@ impl<ID: 'static> Opts<ID> {
   #[inline]
   pub fn iter(&self) -> core::slice::Iter<'static, Opt<ID>> {
     self.options.iter()
+  }
+}
+
+
+#[cfg(test)]
+mod opts_tests {
+  use super::*;
+
+  #[test]
+  #[allow(unused)]
+  fn test_required_opt_limit() {
+    const NUM_OPTS: usize = MAX_REQUIRED_OPTIONS + 2;
+    const OPT_LIST: [Opt<()>; NUM_OPTS] = {
+      const REQUIRED: Opt<()> = Opt::flag((), &[""]).required();
+      let mut array: [Opt<()>; NUM_OPTS] = [REQUIRED; NUM_OPTS];
+      array[0] = Opt::help_flag((), &[""]);
+      array[NUM_OPTS - 1] = Opt::positional((), "");
+      array
+    };
+    const OPTIONS: Opts<()> = Opts::new(&OPT_LIST);
+  }
+
+  #[test]
+  fn test_with_chains() {
+    assert_eq!(Opts::<()>::new(&[]).with_flag_chars("-/"),
+      Opts { options: &[], flag_chars: "-/", description: None });
+    assert_eq!(Opts::<()>::new(&[]).with_description("test description"),
+      Opts { options: &[], flag_chars: "-", description: Some("test description") });
+  }
+
+  #[test]
+  fn test_help_option() {
+    const OPTS1: Opts<()> = Opts::new(&[
+      Opt::flag((), &[""]),
+      Opt::flag((), &[""]),
+      Opt::positional((), ""),
+      Opt::positional((), ""),
+      Opt::help_flag((), &["--help"]),
+      Opt::value((), &[""], ""),
+      Opt::help_flag((), &[""]),
+    ]);
+    const OPTS2: Opts<()> = Opts::new(&[
+      Opt::flag((), &[""]),
+      Opt::positional((), ""),
+      Opt::value((), &[""], ""),
+    ]);
+    assert_eq!(OPTS1.help_option(), Some(&Opt::help_flag((), &["--help"])));
+    assert_eq!(OPTS2.help_option(), None);
   }
 }

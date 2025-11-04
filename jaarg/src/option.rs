@@ -201,17 +201,17 @@ impl<ID: 'static> Opt<ID> {
 
 
 #[cfg(test)]
-mod tests {
+mod opt_tests {
   use super::*;
 
   #[test]
   #[should_panic(expected = "Option names cannot be an empty slice")]
-  fn test_opt_new_empty_names_disallowed() {
+  fn test_new_empty_names_disallowed() {
     Opt::new((), OptIdentifier::Multi(&[]), None, OptType::Positional);
   }
 
   #[test]
-  fn test_opt_public_initialisers() {
+  fn test_public_initialisers() {
     assert_eq!(Opt::positional((), "name"), Opt { id: (),
       names: OptIdentifier::Single("name"), value_name: None, help_string: None,
       r#type: OptType::Positional, flags: OptFlag::NONE,
@@ -231,7 +231,7 @@ mod tests {
   }
 
   #[test]
-  fn test_opt_valid_with_chains() {
+  fn test_valid_with_chains() {
     assert_eq!(Opt::positional((), "").required(), Opt { id: (),
       names: OptIdentifier::Single(""), value_name: None, help_string: None,
       r#type: OptType::Positional, flags: OptFlag::REQUIRED,
@@ -248,24 +248,24 @@ mod tests {
 
   #[test]
   #[should_panic(expected = "Help flag cannot be made required")]
-  fn test_opt_required_help_disallowed() {
+  fn test_required_help_disallowed() {
     Opt::help_flag((), &["-h", "--help"]).required();
   }
 
   #[test]
   #[should_panic(expected = "Only flags are allowed to be help options")]
-  fn test_opt_positional_with_help_flag_disallowed() {
+  fn test_positional_with_help_flag_disallowed() {
     Opt::positional((), "").with_help_flag();
   }
 
   #[test]
   #[should_panic(expected = "Only flags are allowed to be help options")]
-  fn test_opt_value_with_help_flag_disallowed() {
+  fn test_value_with_help_flag_disallowed() {
     Opt::value((), &[""], "").with_help_flag();
   }
 
   #[test]
-  fn test_opt_flag_getters() {
+  fn test_flag_getters() {
     const HELP: Opt<()> = Opt::help_flag((), &[""]);
     const REQUIRED: Opt<()> = Opt::positional((), "").required();
     assert!(HELP.is_help());
@@ -275,13 +275,13 @@ mod tests {
   }
 
   #[test]
-  fn test_opt_first_name() {
+  fn test_first_name() {
     assert_eq!(Opt::positional((), "first").first_name(), "first");
     assert_eq!(Opt::flag((), &["first", "second"]).first_name(), "first");
   }
 
   #[test]
-  fn test_opt_first_long_name() {
+  fn test_first_long_name() {
     assert_eq!(Opt::positional((), "--long").first_long_name(), Some("--long"));
     assert_eq!(Opt::positional((), "-long").first_long_name(), Some("-long"));
     assert_eq!(Opt::positional((), "--l").first_long_name(), Some("--l"));
@@ -290,7 +290,7 @@ mod tests {
   }
 
   #[test]
-  fn test_opt_first_short_name() {
+  fn test_first_short_name() {
     assert_eq!(Opt::positional((), "-s").first_short_name(), Some("-s"));
     assert_eq!(Opt::positional((), "--long").first_short_name(), None);
     assert_eq!(Opt::positional((), "--").first_short_name(), None);
@@ -300,7 +300,7 @@ mod tests {
   }
 
   #[test]
-  fn test_opt_first_short_name_char() {
+  fn test_first_short_name_char() {
     assert_eq!(Opt::positional((), "-s").first_short_name_char(), Some('s'));
     assert_eq!(Opt::positional((), "--long").first_short_name_char(), None);
     assert_eq!(Opt::positional((), "--").first_short_name_char(), None);
@@ -310,7 +310,7 @@ mod tests {
   }
 
   #[test]
-  fn test_opt_match_name() {
+  fn test_match_name() {
     assert_eq!(Opt::flag((), &["--one", "--two", "--threee", "--three"])
       .match_name("--three", 0), Some("--three"));
     assert_eq!(Opt::flag((), &["--one", "--two", "--threee"])
