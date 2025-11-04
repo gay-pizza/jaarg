@@ -6,10 +6,10 @@
 extern crate std;
 
 use crate::alloc::ParseMapResult;
-use crate::{HandlerResult, HelpWriter, HelpWriterContext, Opt, Opts, ParseControl, ParseError, ParseResult, StandardFullHelpWriter, StandardShortUsageWriter};
+use crate::{ErrorUsageWriter, ErrorUsageWriterContext, HandlerResult, HelpWriter, HelpWriterContext, Opt, Opts, ParseControl, ParseError, ParseResult, StandardErrorUsageWriter, StandardFullHelpWriter};
 use std::path::Path;
 use std::rc::Rc;
-use std::{env, eprint, eprintln, print};
+use std::{env, eprint, print};
 
 impl<ID: 'static> Opts<ID> {
   /// Wrapper around [Opts::parse] that gathers arguments from the command line and prints errors to stderr.
@@ -19,7 +19,8 @@ impl<ID: 'static> Opts<ID> {
   pub fn parse_easy<'a>(&self, handler: impl FnMut(&str, &ID, &Opt<ID>, &str, &str) -> HandlerResult<'a, ParseControl>
   ) -> ParseResult {
     let (program_name, argv) = Self::easy_args();
-    self.parse(&program_name, argv, handler, |name, e| self.easy_error(name, e))
+    self.parse(&program_name, argv, handler,
+      |name, e| self.eprint_usage::<StandardErrorUsageWriter<'_, ID>>(name, e))
   }
 
   /// Prints full help text for the options using the standard full.
@@ -45,20 +46,19 @@ impl<ID: 'static> Opts<ID> {
     eprint!("{}", W::new(ctx));
   }
 
-  fn easy_args<'a>() -> (Rc<str>, env::Args) {
+  /// Print error & usage text to stderr using the provided error & usage writer.
+  ///
+  /// Requires `features = ["std"]`.
+  pub fn eprint_usage<'a, W: ErrorUsageWriter<'a, ID>>(&'a self, program_name: &'a str, error: ParseError<'a>) {
+    let ctx = ErrorUsageWriterContext { options: self, program_name, error };
+    eprint!("{}", W::new(ctx));
+  }
+
+  fn easy_args() -> (Rc<str>, env::Args) {
     let mut argv = env::args();
     let argv0 = argv.next().unwrap();
     let program_name = Path::new(&argv0).file_name().unwrap().to_string_lossy();
     (program_name.into(), argv)
-  }
-
-  fn easy_error(&self, program_name: &str, err: ParseError) {
-    eprintln!("{program_name}: {err}");
-    self.eprint_help::<StandardShortUsageWriter<'_, ID>>(program_name);
-    if let Some(help_option) = self.help_option() {
-      eprintln!("Run '{program_name} {help}' to view all available options.",
-        help = help_option.first_long_name().unwrap_or(help_option.first_name()));
-    }
   }
 }
 
@@ -71,6 +71,6 @@ impl Opts<&'static str> {
     let (program_name, argv) = Self::easy_args();
     self.parse_map(&program_name, argv,
       |name| self.print_full_help(name),
-      |name, e| self.easy_error(name, e))
+      |name, e| self.eprint_usage::<StandardErrorUsageWriter<'_, &'static str>>(name, e))
   }
 }

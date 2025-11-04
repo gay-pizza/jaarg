@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+/// Enough context to show full help text.
 pub struct HelpWriterContext<'a, ID: 'static> {
   pub options: &'a Opts<ID>,
   pub program_name: &'a str,
@@ -181,6 +182,46 @@ impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
       writeln!(f)?;
     }
 
+    Ok(())
+  }
+}
+
+
+// Enough context to show usage and error information.
+pub struct ErrorUsageWriterContext<'a, ID: 'static> {
+  pub options: &'a Opts<ID>,
+  pub program_name: &'a str,
+  pub error: ParseError<'a>
+}
+
+pub trait ErrorUsageWriter<'a, ID: 'static>: core::fmt::Display {
+  fn new(ctx: ErrorUsageWriterContext<'a, ID>) -> Self;
+}
+
+pub struct StandardErrorUsageWriter<'a, ID: 'static>(ErrorUsageWriterContext<'a, ID>);
+
+impl<'a, ID: 'static> ErrorUsageWriter<'a, ID> for StandardErrorUsageWriter<'a, ID> {
+  fn new(ctx: ErrorUsageWriterContext<'a, ID>) -> Self { Self(ctx) }
+}
+
+impl<ID> core::fmt::Display for StandardErrorUsageWriter<'_, ID> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    // Write error
+    writeln!(f, "{name}: {error}", name=self.0.program_name, error = self.0.error)?;
+
+    // Write usage
+    writeln!(f, "{}", StandardShortUsageWriter::new(HelpWriterContext {
+      options: self.0.options,
+      program_name: self.0.program_name
+    }))?;
+
+    // Write full help instruction if a
+    if let Some(help_option) = self.0.options.help_option() {
+      writeln!(f, "Run '{name} {help}' to view all available options.",
+        name = self.0.program_name,
+        // Prefer long name, but otherwise any name is fine
+        help = help_option.first_long_name().unwrap_or(help_option.first_name()))?;
+    }
     Ok(())
   }
 }
