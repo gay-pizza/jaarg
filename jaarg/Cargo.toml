@@ -9,4 +9,5 @@ authors.workspace = true
 
 [features]
 default = ["std"]
-std = []
+alloc = []
+std = ["alloc"]

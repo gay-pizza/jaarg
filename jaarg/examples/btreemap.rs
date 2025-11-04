@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-use jaarg::{std::ParseMapResult, Opt, Opts};
+use jaarg::{alloc::ParseMapResult, Opt, Opts};
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -16,7 +16,8 @@ fn main() -> ExitCode {
 
   let map = match OPTIONS.parse_map_easy() {
     ParseMapResult::Map(map) => map,
-    ParseMapResult::Exit(code) => { return code; }
+    ParseMapResult::ExitSuccess => { return ExitCode::SUCCESS; }
+    ParseMapResult::ExitFailure => { return ExitCode::FAILURE; }
   };
 
   println!("{:?}", map);

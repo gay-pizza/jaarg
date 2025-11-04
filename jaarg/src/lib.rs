@@ -13,5 +13,7 @@ include!("options.rs");
 include!("argparse.rs");
 include!("help.rs");
 
+#[cfg(feature = "alloc")]
+pub mod alloc;
 #[cfg(feature = "std")]
 pub mod std;
