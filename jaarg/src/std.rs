@@ -9,7 +9,7 @@ use crate::alloc::ParseMapResult;
 use crate::{HandlerResult, HelpWriter, HelpWriterContext, Opt, Opts, ParseControl, ParseError, ParseResult, StandardFullHelpWriter, StandardShortUsageWriter};
 use std::path::Path;
 use std::rc::Rc;
-use std::{env, eprintln, println};
+use std::{env, eprint, eprintln, print};
 
 impl<ID: 'static> Opts<ID> {
   /// Wrapper around [Opts::parse] that gathers arguments from the command line and prints errors to stderr.
@@ -34,7 +34,7 @@ impl<ID: 'static> Opts<ID> {
   /// Requires `features = ["std"]`.
   pub fn print_help<'a, W: HelpWriter<'a, ID>>(&'a self, program_name: &'a str) {
     let ctx = HelpWriterContext { options: self, program_name };
-    println!("{}", W::new(ctx));
+    print!("{}", W::new(ctx));
   }
 
   /// Print help text to stderr using the provided help writer.
@@ -42,7 +42,7 @@ impl<ID: 'static> Opts<ID> {
   /// Requires `features = ["std"]`.
   pub fn eprint_help<'a, W: HelpWriter<'a, ID>>(&'a self, program_name: &'a str) {
     let ctx = HelpWriterContext { options: self, program_name };
-    eprintln!("{}", W::new(ctx));
+    eprint!("{}", W::new(ctx));
   }
 
   fn easy_args<'a>() -> (Rc<str>, env::Args) {
