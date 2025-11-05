@@ -1,0 +1,31 @@
+name: Build & test
+
+on:
+  push:
+    paths: [ ".github/workflows/**", "**/*.rs", "**/Cargo.toml", "**/.cargo/config.toml" ]
+  pull_request:
+    paths: [ "**/*.rs", "**/Cargo.toml", "**/.cargo/config.toml" ]
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_PROFILE: release-debuginfo
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os:
+        - macos-latest
+        - ubuntu-latest
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build
+      run: cargo build --verbose --profile ${{env.CARGO_PROFILE}}
+
+    - name: Run tests
+      run: cargo test --verbose --profile ${{env.CARGO_PROFILE}}

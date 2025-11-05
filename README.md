@@ -62,7 +62,7 @@ main:
  * API updates, enough public constructs to roll a custom help writer.
  * Generalised internal error & usage into `StandardErrorUsageWriter` for reuse outside the easy API & in `no_std`.
  * Fixed uncontrollable newlines in user display in easy API.
- * More tests for validating internal behaviour.
+ * More tests for validating internal behaviour & enabled CI on GitHub.
 
 v0.1.1:
  * Fixed incorrect error message format for coerced parsing errors.
@@ -78,7 +78,6 @@ Near future:
  * Actual `no_std` tests & examples.
  * More control over parsing behaviour (getopt style, no special casing shorts for Windows style flags, etc.)
  * More practical examples.
- * CI on main GitHub.
 
 Long term:
  * Strategy for handling exclusive argument groups.
