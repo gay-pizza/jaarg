@@ -209,18 +209,21 @@ impl<ID> core::fmt::Display for StandardErrorUsageWriter<'_, ID> {
     // Write error
     writeln!(f, "{name}: {error}", name=self.0.program_name, error = self.0.error)?;
 
-    // Write usage
-    writeln!(f, "{}", StandardShortUsageWriter::new(HelpWriterContext {
-      options: self.0.options,
-      program_name: self.0.program_name
-    }))?;
+    // Provide usage hint for missing required arguments
+    if matches!(self.0.error, ParseError::RequiredPositional(_) | ParseError::RequiredParameter(_)) {
+      // Write short usage
+      writeln!(f, "{}", StandardShortUsageWriter::new(HelpWriterContext {
+        options: self.0.options,
+        program_name: self.0.program_name
+      }))?;
 
-    // Write full help instruction if a
-    if let Some(help_option) = self.0.options.help_option() {
-      writeln!(f, "Run '{name} {help}' to view all available options.",
-        name = self.0.program_name,
-        // Prefer long name, but otherwise any name is fine
-        help = help_option.first_long_name().unwrap_or(help_option.first_name()))?;
+      // Write full help instruction if available
+      if let Some(help_option) = self.0.options.help_option() {
+        writeln!(f, "Run '{name} {help}' to view all available options.",
+          name = self.0.program_name,
+          // Prefer long name, but otherwise any name is fine
+          help = help_option.first_long_name().unwrap_or(help_option.first_name()))?;
+      }
     }
     Ok(())
   }
