@@ -61,8 +61,9 @@ main:
  * Moved `Opts::parse_map` into newly introduced `alloc` crate, making it accessible for `no_std` users.
  * API updates, enough public constructs to roll a custom help writer.
  * Generalised internal error & usage into `StandardErrorUsageWriter` for reuse outside the easy API & in `no_std`.
- * Fixed uncontrollable newlines in user display in easy API.
+ * Fixed forced newline in user display in easy API.
  * More tests for validating internal behaviour & enabled CI on GitHub.
+ * New `no_std` examples.
 
 v0.1.1:
  * Fixed incorrect error message format for coerced parsing errors.
@@ -75,7 +76,6 @@ v0.1.0:
 ### Roadmap ###
 
 Near future:
- * Actual `no_std` tests & examples.
  * More control over parsing behaviour (getopt style, no special casing shorts for Windows style flags, etc.)
  * More practical examples.
 

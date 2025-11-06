@@ -1,0 +1,10 @@
+[package]
+publish = false
+name = "jaarg-nostd"
+description = "nostd examples for jaarg"
+edition.workspace = true
+
+[dependencies.jaarg]
+path = "../jaarg"
+default-features = false
+features = ["alloc"]

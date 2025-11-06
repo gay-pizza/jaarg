@@ -5,8 +5,10 @@
 
 extern crate std;
 
-use crate::alloc::ParseMapResult;
-use crate::{ErrorUsageWriter, ErrorUsageWriterContext, HandlerResult, HelpWriter, HelpWriterContext, Opt, Opts, ParseControl, ParseError, ParseResult, StandardErrorUsageWriter, StandardFullHelpWriter};
+use crate::{
+  ErrorUsageWriter, ErrorUsageWriterContext, HandlerResult, HelpWriter, HelpWriterContext, Opt, Opts,
+  ParseControl, ParseError, ParseResult, StandardErrorUsageWriter, StandardFullHelpWriter, alloc::ParseMapResult
+};
 use std::path::Path;
 use std::rc::Rc;
 use std::{env, eprint, print};

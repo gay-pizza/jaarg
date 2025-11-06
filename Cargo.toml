@@ -1,5 +1,6 @@
 [workspace]
-members = ["jaarg"]
+default-members = ["jaarg"]
+members = ["jaarg-nostd"]
 resolver = "3"
 
 [workspace.package]

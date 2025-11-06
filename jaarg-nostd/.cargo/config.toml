@@ -1,0 +1,12 @@
+[target.'cfg(target_os = "macos")']
+rustflags = ["-Cpanic=abort", "-C", "link-args=-lSystem"]
+[target.'cfg(target_family = "windows")']
+rustflags = ["-Cpanic=abort", "-C", "target-feature=+crt-static"]
+[target.'cfg(target_os = "linux")']
+rustflags = ["-Cpanic=abort", "-C", "link-args=-lc"]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
