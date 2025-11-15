@@ -9,6 +9,12 @@ pub struct HelpWriterContext<'a, ID: 'static> {
   pub program_name: &'a str,
 }
 
+impl<ID: 'static> Clone for HelpWriterContext<'_, ID> {
+  fn clone(&self) -> Self {
+    Self { options: self.options, program_name: self.program_name }
+  }
+}
+
 pub trait HelpWriter<'a, ID: 'static>: core::fmt::Display {
   fn new(ctx: HelpWriterContext<'a, ID>) -> Self;
 }
@@ -62,54 +68,8 @@ impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     use core::fmt::Write;
 
-    // Base usage
-    write!(f, "Usage: {}", self.0.program_name)?;
-    let short_flag = self.0.options.flag_chars.chars().next().unwrap();
-
-    // Write optional short options
-    let mut first = true;
-    for option in self.0.options.options {
-      if let (OptType::Flag | OptType::Value, false) = (option.r#type, option.is_required()) {
-        if let Some(c) = option.first_short_name_char() {
-          if first {
-            write!(f, " [{short_flag}")?;
-            first = false;
-          }
-          f.write_char(c)?;
-        }
-      }
-    }
-    if !first {
-      f.write_char(']')?;
-    }
-
-    // Write required short options
-    first = true;
-    for option in self.0.options.options {
-      if let (OptType::Flag | OptType::Value, true) = (option.r#type, option.is_required()) {
-        if let Some(c) = option.first_short_name_char() {
-          if first {
-            write!(f, " <{short_flag}")?;
-            first = false;
-          }
-          f.write_char(c)?;
-        }
-      }
-    }
-    if !first {
-      f.write_char('>')?;
-    }
-
-    // Write positional arguments
-    for option in self.0.options.iter()
-        .filter(|o| matches!(o.r#type, OptType::Positional)) {
-      let name = option.first_name();
-      match option.is_required() {
-        true  => write!(f, " <{name}>")?,
-        false => write!(f, " [{name}]")?,
-      }
-    }
-    writeln!(f)?;
+    // Base short usage
+    writeln!(f, "{}", StandardShortUsageWriter::new(self.0.clone()))?;
 
     if let Some(description) = self.0.options.description {
       writeln!(f)?;
@@ -129,7 +89,7 @@ impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
       .map(|o| calculate_left_pad(o)).max().unwrap_or(0);
 
     // Write positional argument descriptions
-    first = true;
+    let mut first = true;
     for option in self.0.options.iter()
         .filter(|o| matches!(o.r#type, OptType::Positional)) {
       if first {
