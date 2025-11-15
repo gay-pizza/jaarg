@@ -57,7 +57,9 @@ println!("{file:?} -> {out:?} (number: {number:?})",
 
 ### Changelog ###
 
-main:
+<!-- main: -->
+
+v0.2.0:
  * Change licence from `MIT` to `MIT OR Apache-2.0`.
  * Moved `Opts::parse_map` into newly introduced `alloc` crate, making it accessible for `no_std` users.
  * More generic & flexible help API: removed forced newline, moved error writer to `StandardErrorUsageWriter`,
