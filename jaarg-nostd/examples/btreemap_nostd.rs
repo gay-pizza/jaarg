@@ -27,12 +27,12 @@ extern "C" fn safe_main(args: &[&str]) -> ExitCode {
   let map = match OPTIONS.parse_map(
     SimplePathBuf::from(*args.first().unwrap()).basename(),
     args.iter().skip(1),
-    |name| {
-      let ctx = HelpWriterContext { options: &OPTIONS, program_name: name };
+    |program_name| {
+      let ctx = HelpWriterContext { options: &OPTIONS, program_name };
       print!("{}", StandardFullHelpWriter::new(ctx));
     },
-    |program_name, err| {
-      let ctx = ErrorUsageWriterContext { options: &OPTIONS, program_name, error: err };
+    |program_name, error| {
+      let ctx = ErrorUsageWriterContext { options: &OPTIONS, program_name, error };
       eprint!("{}", StandardErrorUsageWriter::new(ctx));
     }
   ) {
