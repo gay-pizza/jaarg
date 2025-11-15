@@ -59,6 +59,9 @@ println!("{file:?} -> {out:?} (number: {number:?})",
 
 <!-- main: -->
 
+v0.2.1:
+ * Fixed licence field in `Cargo.toml`.
+
 v0.2.0:
  * Change licence from `MIT` to `MIT OR Apache-2.0`.
  * Moved `Opts::parse_map` into newly introduced `alloc` crate, making it accessible for `no_std` users.

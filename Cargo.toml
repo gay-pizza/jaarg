@@ -4,8 +4,8 @@ members = ["jaarg-nostd"]
 resolver = "3"
 
 [workspace.package]
-version = "0.2.0"
-license = "MIT"
+version = "0.2.1"
+license = "MIT OR Apache-2.0"
 edition = "2021"
 description = "It can parse your arguments you should use it it's called jaarg"
 repository = "https://github.com/gay-pizza/jaarg"
