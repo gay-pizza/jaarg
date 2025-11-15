@@ -59,11 +59,11 @@ println!("{file:?} -> {out:?} (number: {number:?})",
 
 main:
  * Moved `Opts::parse_map` into newly introduced `alloc` crate, making it accessible for `no_std` users.
- * API updates, enough public constructs to roll a custom help writer.
- * Generalised internal error & usage into `StandardErrorUsageWriter` for reuse outside the easy API & in `no_std`.
- * Fixed forced newline in user display in easy API.
+ * More generic & flexible help API: removed forced newline, moved error writer to `StandardErrorUsageWriter`,
+    generalised "Usage" line in standard full writer, enough public constructs to roll a custom help writer.
+ * Added the ability to exclude options from short usage, full help, or both.
  * More tests for validating internal behaviour & enabled CI on GitHub.
- * New `no_std` examples.
+ * Added new `no_std` examples.
 
 v0.1.1:
  * Fixed incorrect error message format for coerced parsing errors.

@@ -27,14 +27,24 @@ pub struct Opt<ID> {
   flags: OptFlag,
 }
 
+pub enum OptHide {
+  Short,
+  Full,
+  All,
+}
+
 #[derive(Debug, PartialEq)]
 struct OptFlag(u8);
 
 impl OptFlag {
-  pub const REQUIRED: Self = OptFlag(1 << 0);
-  pub const HELP: Self     = OptFlag(1 << 1);
+  #[allow(dead_code)]
+  pub const NONE: Self          = Self(0);
+  pub const REQUIRED: Self      = OptFlag(1 << 0);
+  pub const HELP: Self          = OptFlag(1 << 1);
+  pub const VISIBLE_SHORT: Self = OptFlag(1 << 2);
+  pub const VISIBLE_FULL: Self  = OptFlag(1 << 3);
 
-  pub const NONE: Self = OptFlag(0);
+  pub const DEFAULT: Self = Self(Self::VISIBLE_SHORT.0 | Self::VISIBLE_FULL.0);
 }
 
 // TODO: Improve this interface by making the name field take AsOptIdentifier when const traits are stabilised
@@ -45,7 +55,7 @@ impl<ID> Opt<ID> {
       OptIdentifier::Single(_) => true,
       OptIdentifier::Multi(names) => !names.is_empty(),
     }, "Option names cannot be an empty slice");
-    Self { id, names, value_name, help_string: None, r#type, flags: OptFlag::NONE }
+    Self { id, names, value_name, help_string: None, r#type, flags: OptFlag::DEFAULT }
   }
 
   /// A positional argument that is parsed sequentially without being invoked by an option flag.
@@ -81,6 +91,17 @@ impl<ID> Opt<ID> {
     self
   }
 
+  /// Marks the option to exclude it from appearing in short usage text, full help text, or both.
+  #[inline]
+  pub const fn hide_usage(mut self, from: OptHide) -> Self {
+    self.flags.0 &= !match from {
+      OptHide::Short => OptFlag::VISIBLE_SHORT.0,
+      OptHide::Full  => OptFlag::VISIBLE_FULL.0,
+      OptHide::All   => OptFlag::VISIBLE_SHORT.0 | OptFlag::VISIBLE_FULL.0,
+    };
+    self
+  }
+
   #[inline]
   const fn with_help_flag(mut self) -> Self {
     assert!(matches!(self.r#type, OptType::Flag), "Only flags are allowed to be help options");
@@ -89,13 +110,25 @@ impl<ID> Opt<ID> {
   }
 
   /// Returns true if this is a required positional argument, or required option argument.
-  #[inline(always)] pub const fn is_required(&self) -> bool {
+  #[inline(always)]
+  pub const fn is_required(&self) -> bool {
     (self.flags.0 & OptFlag::REQUIRED.0) != 0
   }
 
   /// Returns true if this is the help option.
-  #[inline(always)] pub const fn is_help(&self) -> bool {
+  #[inline(always)]
+  pub const fn is_help(&self) -> bool {
     (self.flags.0 & OptFlag::HELP.0) != 0
+  }
+
+  #[inline(always)]
+  const fn is_short_visible(&self) -> bool {
+    (self.flags.0 & OptFlag::VISIBLE_SHORT.0) != 0
+  }
+
+  #[inline(always)]
+  const fn is_full_visible(&self) -> bool {
+    (self.flags.0 & OptFlag::VISIBLE_FULL.0) != 0
   }
 }
 
@@ -199,6 +232,10 @@ impl<ID: 'static> Opt<ID> {
   }
 }
 
+impl core::ops::BitOr for OptFlag {
+  type Output = Self;
+  fn bitor(self, rhs: Self) -> Self::Output { Self(self.0 | rhs.0) }
+}
 
 #[cfg(test)]
 mod opt_tests {
@@ -214,19 +251,19 @@ mod opt_tests {
   fn test_public_initialisers() {
     assert_eq!(Opt::positional((), "name"), Opt { id: (),
       names: OptIdentifier::Single("name"), value_name: None, help_string: None,
-      r#type: OptType::Positional, flags: OptFlag::NONE,
+      r#type: OptType::Positional, flags: OptFlag::DEFAULT,
     });
     assert_eq!(Opt::help_flag((), &["name"]), Opt { id: (),
       names: OptIdentifier::Multi(&["name"]), value_name: None, help_string: None,
-      r#type: OptType::Flag, flags: OptFlag::HELP,
+      r#type: OptType::Flag, flags: OptFlag::DEFAULT | OptFlag::HELP,
     });
     assert_eq!(Opt::flag((), &["name"]), Opt { id: (),
       names: OptIdentifier::Multi(&["name"]), value_name: None, help_string: None,
-      r#type: OptType::Flag, flags: OptFlag::NONE,
+      r#type: OptType::Flag, flags: OptFlag::DEFAULT,
     });
     assert_eq!(Opt::value((), &["name"], "value"), Opt { id: (),
       names: OptIdentifier::Multi(&["name"]), value_name: Some("value"), help_string: None,
-      r#type: OptType::Value, flags: OptFlag::NONE,
+      r#type: OptType::Value, flags: OptFlag::DEFAULT,
     });
   }
 
@@ -234,15 +271,31 @@ mod opt_tests {
   fn test_valid_with_chains() {
     assert_eq!(Opt::positional((), "").required(), Opt { id: (),
       names: OptIdentifier::Single(""), value_name: None, help_string: None,
-      r#type: OptType::Positional, flags: OptFlag::REQUIRED,
+      r#type: OptType::Positional, flags: OptFlag::DEFAULT | OptFlag::REQUIRED,
     });
     assert_eq!(Opt::positional((), "").required().help_text("help string"), Opt { id: (),
       names: OptIdentifier::Single(""), value_name: None, help_string: Some("help string"),
-      r#type: OptType::Positional, flags: OptFlag::REQUIRED,
+      r#type: OptType::Positional, flags: OptFlag::DEFAULT | OptFlag::REQUIRED,
     });
     assert_eq!(Opt::positional((), "").help_text("help string"), Opt { id: (),
       names: OptIdentifier::Single(""), value_name: None, help_string: Some("help string"),
+      r#type: OptType::Positional, flags: OptFlag::DEFAULT,
+    });
+    assert_eq!(Opt::positional((), "").hide_usage(OptHide::Short), Opt { id: (),
+      names: OptIdentifier::Single(""), value_name: None, help_string: None,
+      r#type: OptType::Positional, flags: OptFlag::VISIBLE_FULL,
+    });
+    assert_eq!(Opt::positional((), "").hide_usage(OptHide::Full), Opt { id: (),
+      names: OptIdentifier::Single(""), value_name: None, help_string: None,
+      r#type: OptType::Positional, flags: OptFlag::VISIBLE_SHORT,
+    });
+    assert_eq!(Opt::positional((), "").hide_usage(OptHide::All), Opt { id: (),
+      names: OptIdentifier::Single(""), value_name: None, help_string: None,
       r#type: OptType::Positional, flags: OptFlag::NONE,
+    });
+    assert_eq!(Opt::positional((), "").required().hide_usage(OptHide::All), Opt { id: (),
+      names: OptIdentifier::Single(""), value_name: None, help_string: None,
+      r#type: OptType::Positional, flags: OptFlag::REQUIRED,
     });
   }
 

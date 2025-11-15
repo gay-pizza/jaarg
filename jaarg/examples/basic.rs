@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-use jaarg::{Opt, Opts, ParseControl, ParseResult};
+use jaarg::{Opt, OptHide, Opts, ParseControl, ParseResult};
 use std::path::PathBuf;
 
 fn main() {
@@ -15,7 +15,8 @@ fn main() {
   // Set up arguments table
   enum Arg { Help, Number, File, Out }
   const OPTIONS: Opts<Arg> = Opts::new(&[
-    Opt::help_flag(Arg::Help, &["-h", "--help"]).help_text("Show this help and exit."),
+    Opt::help_flag(Arg::Help, &["-h", "--help"]).hide_usage(OptHide::Short)
+      .help_text("Show this help and exit."),
     Opt::value(Arg::Number, &["-n", "--number"], "value")
       .help_text("Optionally specify a number (default: 0)"),
     Opt::positional(Arg::File, "file").required()

@@ -31,7 +31,7 @@ impl<ID: 'static> core::fmt::Display for StandardShortUsageWriter<'_, ID> {
 
     // Write option parameter arguments
     for option in self.0.options.iter()
-        .filter(|o| matches!(o.r#type, OptType::Value | OptType::Flag)) {
+        .filter(|o| matches!((o.r#type, o.is_short_visible()), (OptType::Value | OptType::Flag, true))) {
       write!(f, " {}", if option.is_required() { '<' } else { '[' })?;
       match (option.first_short_name(), option.first_long_name()) {
         (Some(short_name), Some(long_name)) => write!(f, "{short_name}|{long_name}")?,
@@ -47,7 +47,7 @@ impl<ID: 'static> core::fmt::Display for StandardShortUsageWriter<'_, ID> {
 
     // Write positional arguments
     for option in self.0.options.iter()
-        .filter(|o| matches!(o.r#type, OptType::Positional)) {
+        .filter(|o| matches!((o.r#type, o.is_short_visible()), (OptType::Positional, true))) {
       let name = option.first_name();
       match option.is_required() {
         true  => write!(f, " <{name}>")?,
@@ -66,8 +66,6 @@ impl<'a, ID: 'static> HelpWriter<'a, ID> for StandardFullHelpWriter<'a, ID> {
 
 impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    use core::fmt::Write;
-
     // Base short usage
     writeln!(f, "{}", StandardShortUsageWriter::new(self.0.clone()))?;
 
@@ -91,7 +89,7 @@ impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
     // Write positional argument descriptions
     let mut first = true;
     for option in self.0.options.iter()
-        .filter(|o| matches!(o.r#type, OptType::Positional)) {
+        .filter(|o| matches!((o.r#type, o.is_full_visible()), (OptType::Positional, true))) {
       if first {
         // Write separator and positional section header
         writeln!(f)?;
@@ -111,7 +109,7 @@ impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
     // Write option parameter argument descriptions
     first = true;
     for option in self.0.options.iter()
-        .filter(|o| matches!(o.r#type, OptType::Flag | OptType::Value)) {
+        .filter(|o| matches!((o.r#type, o.is_full_visible()), (OptType::Flag | OptType::Value, true))) {
       if first {
         // Write separator and options section header
         writeln!(f)?;
