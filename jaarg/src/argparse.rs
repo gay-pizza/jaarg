@@ -8,9 +8,9 @@
 pub enum ParseResult {
   /// Parsing succeeded and program execution should continue.
   ContinueSuccess,
-  /// Parsing succeeded and program should exit with success (eg; [std::process::ExitCode::SUCCESS]).
+  /// Parsing succeeded and program should exit with success (eg; `exit(0)`).
   ExitSuccess,
-  /// There was an error while parsing and program should exit with failure (eg; [std::process::ExitCode::FAILURE]).
+  /// There was an error while parsing and program should exit with failure (eg; `exit(1)`).
   ExitError,
 }
 
