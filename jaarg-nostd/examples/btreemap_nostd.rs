@@ -1,6 +1,6 @@
 /* btreemap_nostd - jaarg example program using BTreeMap in `no_std`
  * SPDX-FileCopyrightText: (C) 2025 Gay Pizza Specifications
- * SPDX-License-Identifier: MIT
+ * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
 #![no_std]

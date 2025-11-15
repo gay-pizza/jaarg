@@ -1,6 +1,6 @@
 /* basic - jaarg example program using parse_easy
  * SPDX-FileCopyrightText: (C) 2025 Gay Pizza Specifications
- * SPDX-License-Identifier: MIT
+ * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
 use jaarg::{Opt, OptHide, Opts, ParseControl, ParseResult};

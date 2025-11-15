@@ -1,6 +1,6 @@
 /* jaarg-nostd - Minimal harness to run examples in no_std on desktop
  * SPDX-FileCopyrightText: (C) 2025 Gay Pizza Specifications
- * SPDX-License-Identifier: MIT
+ * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
 //!! [Okay... ready for the pain?](https://media.tenor.com/cJRcMyUAiMcAAAAC/tenor.gif)

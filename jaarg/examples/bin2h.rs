@@ -1,6 +1,6 @@
 /* bin2c - jaarg example application
  * SPDX-FileCopyrightText: (C) 2025 Gay Pizza Specifications
- * SPDX-License-Identifier: MIT
+ * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
 use jaarg::{Opt, Opts, ParseControl, ParseResult};

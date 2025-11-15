@@ -8,8 +8,8 @@ Some say it can parse your arguments.
  <a href="https://crates.io/crates/jaarg">
   <img src="https://img.shields.io/crates/v/jaarg.svg?logo=rust&style=for-the-badge" alt="Crates version" />
  </a>
- <a href="LICENSE">
-  <img src="https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge" alt="MIT License" />
+ <a href="#licensing">
+  <img src="https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0-green.svg?style=for-the-badge" alt="MIT OR Apache-2.0 License" />
  </a>
 </div>
 
@@ -58,6 +58,7 @@ println!("{file:?} -> {out:?} (number: {number:?})",
 ### Changelog ###
 
 main:
+ * Change licence from `MIT` to `MIT OR Apache-2.0`.
  * Moved `Opts::parse_map` into newly introduced `alloc` crate, making it accessible for `no_std` users.
  * More generic & flexible help API: removed forced newline, moved error writer to `StandardErrorUsageWriter`,
     generalised "Usage" line in standard full writer, enough public constructs to roll a custom help writer.
@@ -86,3 +87,8 @@ Long term:
 ### Projects using jaarg (very cool) ###
 <!-- soon... * [Sprout bootloader](https://github.com/edera-dev/sprout) -->
  * [lbminfo](https://github.com/ScrelliCopter/colourcyclinginthehousetonight/tree/main/lbminfo)
+
+### Licensing ###
+
+jaarg is dual-licensed under either the [MIT](LICENSE.MIT) or [Apache 2.0](LICENSE.Apache-2.0) licences.
+Pick whichever works best for your project.
