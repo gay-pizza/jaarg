@@ -132,6 +132,7 @@ impl<ID> Opt<ID> {
   }
 }
 
+#[allow(dead_code)]
 impl<ID: 'static> Opt<ID> {
   /// Get the first name of the option.
   pub const fn first_name(&self) -> &str {
