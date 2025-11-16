@@ -57,7 +57,8 @@ println!("{file:?} -> {out:?} (number: {number:?})",
 
 ### Changelog ###
 
-<!-- main: -->
+main:
+ * Moved top level includes to `pub use`.
 
 v0.2.1:
  * Fixed licence field in `Cargo.toml`.
@@ -90,7 +91,7 @@ Long term:
  * Make use of const traits when they land to improve table setup.
 
 ### Projects using jaarg (very cool) ###
-<!-- soon... * [Sprout bootloader](https://github.com/edera-dev/sprout) -->
+ * [Sprout bootloader](https://github.com/edera-dev/sprout)
  * [lbminfo](https://github.com/ScrelliCopter/colourcyclinginthehousetonight/tree/main/lbminfo)
 
 ### Licensing ###
