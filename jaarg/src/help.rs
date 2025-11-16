@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+use crate::{Opt, Opts, ParseError};
+use crate::option::{OptIdentifier, OptType};
+
 /// Enough context to show full help text.
 pub struct HelpWriterContext<'a, ID: 'static> {
   pub options: &'a Opts<ID>,
@@ -166,7 +169,7 @@ impl<ID> core::fmt::Display for StandardFullHelpWriter<'_, ID> {
       }
 
       // Write line for option, with aligned help text if needed
-      let line = OptionUsageLine(&option);
+      let line = OptionUsageLine(option);
       if let Some(help_text) = option.help_string {
         write!(f, "  {line:.<align_width$} {help_text}")?;
       } else {
