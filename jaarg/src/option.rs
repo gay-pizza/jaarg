@@ -3,15 +3,17 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+use crate::const_utf8;
+
 #[derive(Debug, Copy, Clone, PartialEq)]
-enum OptType {
+pub(crate) enum OptType {
   Positional,
   Flag,
   Value,
 }
 
 #[derive(Debug, PartialEq)]
-enum OptIdentifier {
+pub(crate) enum OptIdentifier {
   Single(&'static str),
   Multi(&'static[&'static str]),
 }
@@ -19,11 +21,11 @@ enum OptIdentifier {
 /// Represents an option argument or positional argument to be parsed.
 #[derive(Debug, PartialEq)]
 pub struct Opt<ID> {
-  id: ID,
-  names: OptIdentifier,
-  value_name: Option<&'static str>,
-  help_string: Option<&'static str>,
-  r#type: OptType,
+  pub(crate) id: ID,
+  pub(crate) names: OptIdentifier,
+  pub(crate) value_name: Option<&'static str>,
+  pub(crate) help_string: Option<&'static str>,
+  pub(crate) r#type: OptType,
   flags: OptFlag,
 }
 
@@ -122,12 +124,12 @@ impl<ID> Opt<ID> {
   }
 
   #[inline(always)]
-  const fn is_short_visible(&self) -> bool {
+  pub(crate) const fn is_short_visible(&self) -> bool {
     (self.flags.0 & OptFlag::VISIBLE_SHORT.0) != 0
   }
 
   #[inline(always)]
-  const fn is_full_visible(&self) -> bool {
+  pub(crate) const fn is_full_visible(&self) -> bool {
     (self.flags.0 & OptFlag::VISIBLE_FULL.0) != 0
   }
 }
@@ -161,7 +163,7 @@ impl<ID: 'static> Opt<ID> {
   }
 
   /// Get the first short option name, if one exists.
-  const fn first_short_name(&self) -> Option<&'static str> {
+  pub(crate) const fn first_short_name(&self) -> Option<&'static str> {
     const fn predicate(name: &str) -> bool {
       let mut chars = const_utf8::CharIterator::from(name);
       if let Some(first) = chars.next() {
@@ -174,7 +176,7 @@ impl<ID: 'static> Opt<ID> {
       false
     }
     match self.names {
-      OptIdentifier::Single(name) => if predicate(&name) { Some(name) } else { None },
+      OptIdentifier::Single(name) => if predicate(name) { Some(name) } else { None },
       // Can be replaced with `find_map` once iterators are const fn
       OptIdentifier::Multi(names) => {
         let mut i = 0;
@@ -190,7 +192,7 @@ impl<ID: 'static> Opt<ID> {
   }
 
   /// Get the first applicable short option's flag character, if one exists.
-  const fn first_short_name_char(&self) -> Option<char> {
+  pub(crate) const fn first_short_name_char(&self) -> Option<char> {
     const fn predicate(name: &str) -> Option<char> {
       let mut chars = const_utf8::CharIterator::from(name);
       if let Some(first) = chars.next() {
@@ -203,7 +205,7 @@ impl<ID: 'static> Opt<ID> {
       None
     }
     match self.names {
-      OptIdentifier::Single(name) => predicate(&name),
+      OptIdentifier::Single(name) => predicate(name),
       // Can be replaced with `find_map` once iterators are const fn.
       OptIdentifier::Multi(names) => {
         let mut i = 0;
@@ -219,7 +221,7 @@ impl<ID: 'static> Opt<ID> {
   }
 
   /// Search for a matching name in the option, offset allows to skip the first `n = offset` characters in the comparison.
-  fn match_name(&self, string: &str, offset: usize) -> Option<&'static str> {
+  pub(crate) fn match_name(&self, string: &str, offset: usize) -> Option<&'static str> {
     let rhs = &string[offset..];
     if rhs.is_empty() {
       return None;

@@ -3,18 +3,21 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+use crate::{ordered_bitset, Opt};
+use crate::option::OptType;
+
 /// Static structure that contains instructions for parsing command-line arguments.
 #[derive(Debug, PartialEq)]
 pub struct Opts<ID: 'static> {
   /// List of options
-  options: &'static[Opt<ID>],
+  pub(crate) options: &'static[Opt<ID>],
   /// String containing single characters that match option prefixes
-  flag_chars: &'static str,
+  pub(crate) flag_chars: &'static str,
   /// A description of what the program does
-  description: Option<&'static str>,
+  pub(crate) description: Option<&'static str>,
 }
 
-type RequiredParamsBitSet = ordered_bitset::OrderedBitSet<u32, 4>;
+pub(crate) type RequiredParamsBitSet = ordered_bitset::OrderedBitSet<u32, 4>;
 
 /// The maximum amount of allowed required non-positional options.
 pub const MAX_REQUIRED_OPTIONS: usize = RequiredParamsBitSet::CAPACITY;

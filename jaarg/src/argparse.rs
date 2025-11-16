@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+use crate::{Opt, Opts};
+use crate::option::OptType;
+use crate::options::RequiredParamsBitSet;
+
 /// Enum describing the result of parsing arguments, and how the program should behave.
 #[derive(Debug)]
 pub enum ParseResult {
@@ -25,7 +29,7 @@ pub enum ParseControl {
 }
 
 /// Result type used by the handler passed to the parser.
-type HandlerResult<'a, T> = core::result::Result<T, ParseError<'a>>;
+pub(crate) type HandlerResult<'a, T> = core::result::Result<T, ParseError<'a>>;
 
 #[derive(Debug)]
 pub enum ParseError<'a> {

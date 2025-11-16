@@ -17,7 +17,7 @@ impl Opts<&'static str> {
     help: impl Fn(&str), error: impl FnOnce(&str, ParseError)
   ) -> ParseMapResult {
     let mut out: BTreeMap<&'static str, String> = BTreeMap::new();
-    match self.parse(&program_name, args, |_program_name, id, opt, _name, arg| {
+    match self.parse(program_name, args, |_program_name, id, opt, _name, arg| {
       if opt.is_help() {
         help(program_name);
         Ok(ParseControl::Quit)

@@ -8,10 +8,15 @@
 mod const_utf8;
 mod ordered_bitset;
 
-include!("option.rs");
-include!("options.rs");
-include!("argparse.rs");
-include!("help.rs");
+mod option;
+mod options;
+mod argparse;
+mod help;
+
+pub use option::*;
+pub use options::*;
+pub use argparse::*;
+pub use help::*;
 
 #[cfg(feature = "alloc")]
 pub mod alloc;
