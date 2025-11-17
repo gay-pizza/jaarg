@@ -241,7 +241,7 @@ impl core::ops::BitOr for OptFlag {
 }
 
 #[cfg(test)]
-mod opt_tests {
+mod tests {
   use super::*;
 
   #[test]
