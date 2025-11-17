@@ -15,7 +15,7 @@ pub enum ParseResult {
   /// Parsing succeeded and program should exit with success (eg; `exit(0)`).
   ExitSuccess,
   /// There was an error while parsing and program should exit with failure (eg; `exit(1)`).
-  ExitError,
+  ExitFailure,
 }
 
 /// Execution control for parser handlers.
@@ -131,7 +131,7 @@ impl<ID: 'static> Opts<ID> {
         Err(err) => {
           // Call the error handler
           error(program_name, err);
-          return ParseResult::ExitError;
+          return ParseResult::ExitFailure;
         }
       }
     }
@@ -139,7 +139,7 @@ impl<ID: 'static> Opts<ID> {
     // Ensure that value options are provided a value
     if let Some((name, _)) = state.expects_arg.take() {
       error(program_name, ParseError::ExpectArgument(name));
-      return ParseResult::ExitError;
+      return ParseResult::ExitFailure;
     }
 
     // Ensure that all required arguments have been provided
@@ -148,12 +148,12 @@ impl<ID: 'static> Opts<ID> {
       match option.r#type {
         OptType::Positional => if i >= state.positional_index && option.is_required() {
           error(program_name, ParseError::RequiredPositional(option.first_name()));
-          return ParseResult::ExitError;
+          return ParseResult::ExitFailure;
         }
         OptType::Flag | OptType::Value => if option.is_required() {
           if !state.required_param_presences.get(required_flag_idx) {
             error(program_name, ParseError::RequiredParameter(option.first_name()));
-            return ParseResult::ExitError;
+            return ParseResult::ExitFailure;
           }
           required_flag_idx += 1;
         }

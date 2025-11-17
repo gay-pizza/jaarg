@@ -28,7 +28,7 @@ impl Opts<&'static str> {
     }, error) {
       ParseResult::ContinueSuccess => ParseMapResult::Map(out),
       ParseResult::ExitSuccess => ParseMapResult::ExitSuccess,
-      ParseResult::ExitError => ParseMapResult::ExitFailure,
+      ParseResult::ExitFailure => ParseMapResult::ExitFailure,
     }
   }
 }

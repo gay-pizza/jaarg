@@ -57,7 +57,7 @@ extern "C" fn safe_main(args: &[&str]) -> ExitCode {
   ) {
     ParseResult::ContinueSuccess => (),
     ParseResult::ExitSuccess => { return ExitCode::SUCCESS; }
-    ParseResult::ExitError => { return ExitCode::FAILURE; }
+    ParseResult::ExitFailure => { return ExitCode::FAILURE; }
   }
 
   // Print the result variables

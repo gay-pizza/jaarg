@@ -234,6 +234,6 @@ pub fn main() -> ExitCode {
       }
     },
     ParseResult::ExitSuccess => { ExitCode::SUCCESS }
-    ParseResult::ExitError   => { ExitCode::FAILURE }
+    ParseResult::ExitFailure => { ExitCode::FAILURE }
   }
 }

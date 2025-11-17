@@ -40,7 +40,7 @@ fn main() {
   }) {
     ParseResult::ContinueSuccess => (),
     ParseResult::ExitSuccess     => std::process::exit(0),
-    ParseResult::ExitError       => std::process::exit(1),
+    ParseResult::ExitFailure     => std::process::exit(1),
   }
 
   // Print the result variables
