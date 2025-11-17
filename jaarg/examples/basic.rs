@@ -26,15 +26,15 @@ fn main() {
   ]).with_description("My simple utility.");
 
   // Parse command-line arguments from `std::env::args()`
-  match OPTIONS.parse_easy(|program_name, id, _opt, _name, arg| {
-    match id {
+  match OPTIONS.parse_easy(|ctx| {
+    match ctx.id {
       Arg::Help => {
-        OPTIONS.print_full_help(program_name);
+        OPTIONS.print_full_help(ctx.program_name);
         return Ok(ParseControl::Quit);
       }
-      Arg::Number => { number = str::parse(arg)?; }
-      Arg::File   => { file = arg.into(); }
-      Arg::Out    => { out = Some(arg.into()); }
+      Arg::Number => { number = str::parse(ctx.arg)?; }
+      Arg::File   => { file = ctx.arg.into(); }
+      Arg::Out    => { out = Some(ctx.arg.into()); }
     }
     Ok(ParseControl::Continue)
   }) {

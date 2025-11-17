@@ -37,17 +37,16 @@ extern "C" fn safe_main(args: &[&str]) -> ExitCode {
   // Parse command-line arguments from argv
   match OPTIONS.parse(
     SimplePathBuf::from(*args.first().unwrap()).basename(),
-    args.iter().skip(1),
-    |program_name, id, _opt, _name, arg| {
-      match id {
+    args.iter().skip(1), |ctx| {
+      match ctx.id {
         Arg::Help => {
-          let ctx = HelpWriterContext { options: &OPTIONS, program_name };
+          let ctx = HelpWriterContext { options: &OPTIONS, program_name: ctx.program_name };
           print!("{}", StandardFullHelpWriter::<'_, Arg>::new(ctx));
           return Ok(ParseControl::Quit);
         }
-        Arg::Number => { number = str::parse(arg)?; }
-        Arg::File   => { file = arg.into(); }
-        Arg::Out    => { out = Some(arg.into()); }
+        Arg::Number => { number = str::parse(ctx.arg)?; }
+        Arg::File   => { file = ctx.arg.into(); }
+        Arg::Out    => { out = Some(ctx.arg.into()); }
       }
       Ok(ParseControl::Continue)
     }, |program_name, error| {

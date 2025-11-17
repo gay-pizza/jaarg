@@ -6,8 +6,8 @@
 extern crate std;
 
 use crate::{
-  ErrorUsageWriter, ErrorUsageWriterContext, HandlerResult, HelpWriter, HelpWriterContext, Opt, Opts,
-  ParseControl, ParseError, ParseResult, StandardErrorUsageWriter, StandardFullHelpWriter, alloc::ParseMapResult
+  alloc::ParseMapResult, ErrorUsageWriter, ErrorUsageWriterContext, HandlerResult, HelpWriter, HelpWriterContext,
+  Opts, ParseControl, ParseError, ParseHandlerContext, ParseResult, StandardErrorUsageWriter, StandardFullHelpWriter
 };
 use std::path::Path;
 use std::rc::Rc;
@@ -18,7 +18,7 @@ impl<ID: 'static> Opts<ID> {
   /// The errors are formatted in a standard user-friendly format.
   ///
   /// Requires `features = ["std"]`.
-  pub fn parse_easy<'a>(&self, handler: impl FnMut(&str, &ID, &Opt<ID>, &str, &str) -> HandlerResult<'a, ParseControl>
+  pub fn parse_easy<'a>(&self, handler: impl FnMut(ParseHandlerContext<ID>) -> HandlerResult<'a, ParseControl>
   ) -> ParseResult {
     let (program_name, argv) = Self::easy_args();
     self.parse(&program_name, argv, handler,

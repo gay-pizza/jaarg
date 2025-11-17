@@ -28,6 +28,21 @@ pub enum ParseControl {
   Quit,
 }
 
+#[derive(Debug)]
+pub struct ParseHandlerContext<'a, ID: 'static> {
+  /// Name of the program, for printing statuses to the user.
+  pub program_name: &'a str,
+  /// The generic argument ID that was matched.
+  pub id: &'a ID,
+  /// The option that was matched by the parser.
+  pub option: &'a Opt<ID>,
+  /// The name of the argument parameter that was matched,
+  /// for option parameters this is the token supplied by the user.
+  pub name: &'a str,
+  /// The argument provided to positional arguments and value options, else "".
+  pub arg: &'a str,
+}
+
 /// Result type used by the handler passed to the parser.
 pub(crate) type HandlerResult<'a, T> = core::result::Result<T, ParseError<'a>>;
 
@@ -118,7 +133,7 @@ impl<ID> Default for ParserState<ID> {
 impl<ID: 'static> Opts<ID> {
   /// Parses an iterator of strings as argument tokens.
   pub fn parse<'a, S: AsRef<str> + 'a, I: Iterator<Item = S>>(&self, program_name: &str, args: I,
-    mut handler: impl FnMut(&str, &ID, &Opt<ID>, &str, &str) -> HandlerResult<'a, ParseControl>,
+    mut handler: impl FnMut(ParseHandlerContext<ID>) -> HandlerResult<'a, ParseControl>,
     error: impl FnOnce(&str, ParseError),
   ) -> ParseResult {
     let mut state = ParserState::default();
@@ -166,10 +181,10 @@ impl<ID: 'static> Opts<ID> {
 
   /// Parse the next token in the argument stream
   fn next<'a, 'b>(&self, state: &mut ParserState<ID>, token: &'b str, program_name: &str,
-    handler: &mut impl FnMut(&str, &ID, &Opt<ID>, &str, &str) -> HandlerResult<'a, ParseControl>
+    handler: &mut impl FnMut(ParseHandlerContext<ID>) -> HandlerResult<'a, ParseControl>
   ) -> HandlerResult<'b, ParseControl> where 'a: 'b {
     let mut call_handler = |option: &Opt<ID>, name, value| {
-      match handler(program_name, &option.id, option, name, value) {
+      match handler(ParseHandlerContext{ program_name, id: &option.id, option, name, arg: value }) {
         // HACK: Ensure the string fields are set properly, because coerced
         //       ParseIntError/ParseFloatError will have the string fields blanked.
         Err(ParseError::ArgumentError("", "", kind))
@@ -232,7 +247,7 @@ impl<ID: 'static> Opts<ID> {
         // Find the next positional argument
         for (i, option) in self.options[state.positional_index..].iter().enumerate() {
           if matches!(option.r#type, OptType::Positional) {
-            handler(program_name, &option.id, option, option.first_name(), token)?;
+            call_handler(option, option.first_name(), token)?;
             state.positional_index += i + 1;
             return Ok(ParseControl::Continue);
           }

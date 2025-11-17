@@ -210,14 +210,14 @@ pub fn main() -> ExitCode {
     Opt::value(Arg::Whitespace, &["--whitespace"], "\"  \"").help_text("Emitted indentation (Default: \"\\t\")"),
   ]).with_description("Convert one or more binary and text file(s) to a C header file,\n\
                        as arrays and C strings respectively.");
-  match OPTIONS.parse_easy(|program_name, id, _opt, _name, arg| {
-    match id {
-      Arg::Out => { arguments.out = arg.into(); }
-      Arg::Bin => { jobs.push(Job { job_type: JobType::Binary, path: arg.into() }); }
-      Arg::Txt => { jobs.push(Job { job_type: JobType::Text, path: arg.into() }); }
-      Arg::Whitespace => { arguments.whitespace = arg.into(); }
+  match OPTIONS.parse_easy(|ctx| {
+    match ctx.id {
+      Arg::Out => { arguments.out = ctx.arg.into(); }
+      Arg::Bin => { jobs.push(Job { job_type: JobType::Binary, path: ctx.arg.into() }); }
+      Arg::Txt => { jobs.push(Job { job_type: JobType::Text, path: ctx.arg.into() }); }
+      Arg::Whitespace => { arguments.whitespace = ctx.arg.into(); }
       Arg::Help => {
-        OPTIONS.print_full_help(program_name);
+        OPTIONS.print_full_help(ctx.program_name);
         return Ok(ParseControl::Quit);
       }
     }

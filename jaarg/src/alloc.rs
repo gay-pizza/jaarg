@@ -17,12 +17,12 @@ impl Opts<&'static str> {
     help: impl Fn(&str), error: impl FnOnce(&str, ParseError)
   ) -> ParseMapResult {
     let mut out: BTreeMap<&'static str, String> = BTreeMap::new();
-    match self.parse(program_name, args, |_program_name, id, opt, _name, arg| {
-      if opt.is_help() {
+    match self.parse(program_name, args, |ctx| {
+      if ctx.option.is_help() {
         help(program_name);
         Ok(ParseControl::Quit)
       } else {
-        out.insert(id, arg.into());
+        out.insert(ctx.id, ctx.arg.into());
         Ok(ParseControl::Continue)
       }
     }, error) {
