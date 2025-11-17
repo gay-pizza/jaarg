@@ -242,3 +242,49 @@ impl<ID: 'static> Opts<ID> {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_parse() {
+    extern crate alloc;
+    use alloc::string::String;
+
+    enum ArgID { One, Two, Three, Four, Five }
+    const OPTIONS: Opts<ArgID> = Opts::new(&[
+      Opt::positional(ArgID::One, "one"),
+      Opt::flag(ArgID::Two, &["--two"]),
+      Opt::value(ArgID::Three, &["--three"], "value"),
+      Opt::value(ArgID::Four, &["--four"], "value"),
+      Opt::value(ArgID::Five, &["--five"], "value"),
+    ]);
+    const ARGUMENTS: &[&str] = &["one", "--two", "--three=three", "--five=", "--four", "four"];
+
+    //TODO: currently needs alloc to deal with arguments not being able to escape handler
+    let mut one: Option<String> = None;
+    let mut two = false;
+    let mut three: Option<String> = None;
+    let mut four: Option<String> = None;
+    let mut five: Option<String> = None;
+    assert!(matches!(OPTIONS.parse("", ARGUMENTS.iter(), |_program_name, id, _opt, _name, arg| {
+      match id {
+        ArgID::One =>   { one = Some(arg.into()); }
+        ArgID::Two =>   { two = true; }
+        ArgID::Three => { three = Some(arg.into()); }
+        ArgID::Four =>  { four = Some(arg.into()); }
+        ArgID::Five =>  { five = Some(arg.into()); }
+      }
+      Ok(ParseControl::Continue)
+    }, |_, error| {
+      panic!("unreachable: {error:?}");
+    }), ParseResult::ContinueSuccess));
+
+    assert_eq!(one, Some("one".into()));
+    assert!(two);
+    assert_eq!(three, Some("three".into()));
+    assert_eq!(four, Some("four".into()));
+    assert_eq!(five, Some("".into()));
+  }
+}
