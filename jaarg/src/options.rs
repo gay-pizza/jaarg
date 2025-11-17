@@ -79,7 +79,7 @@ impl<ID: 'static> Opts<ID> {
 
 
 #[cfg(test)]
-mod opts_tests {
+mod tests {
   use super::*;
 
   #[test]
