@@ -13,7 +13,7 @@ impl Opts<&'static str> {
   /// Parse an iterator of strings as arguments and return the results in a [`BTreeMap`].
   ///
   /// Requires `features = ["alloc"]`.
-  pub fn parse_map<'a, S: AsRef<str> + 'a, I: Iterator<Item = S>>(&self, program_name: &str, args: I,
+  pub fn parse_map<'opt, 't, S: AsRef<str> + 't, I: Iterator<Item = S>>(&'opt self, program_name: &str, args: I,
     help: impl Fn(&str), error: impl FnOnce(&str, ParseError)
   ) -> ParseMapResult {
     let mut out: BTreeMap<&'static str, String> = BTreeMap::new();
@@ -22,7 +22,7 @@ impl Opts<&'static str> {
         help(program_name);
         Ok(ParseControl::Quit)
       } else {
-        out.insert(ctx.id, ctx.arg.unwrap().to_string());
+        out.insert(ctx.id, ctx.arg.map_or(String::new(), |o| o.to_string()));
         Ok(ParseControl::Continue)
       }
     }, error) {

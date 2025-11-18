@@ -6,8 +6,6 @@
 #![no_std]
 #![no_main]
 
-extern crate alloc;
-
 use jaarg::{
   ErrorUsageWriter, ErrorUsageWriterContext, HelpWriter, HelpWriterContext, Opt, Opts,
   ParseControl, ParseResult, StandardErrorUsageWriter, StandardFullHelpWriter
@@ -18,8 +16,8 @@ use jaarg_nostd::{print, println, harness::ExitCode, simplepathbuf::SimplePathBu
 #[allow(improper_ctypes_definitions)]
 extern "C" fn safe_main(args: &[&str]) -> ExitCode {
   // Variables for arguments to fill
-  let mut file = SimplePathBuf::default();
-  let mut out: Option<SimplePathBuf> = None;
+  let mut file: Option<&str> = None;
+  let mut out: Option<&str> = None;
   let mut number = 0;
 
   // Set up arguments table
@@ -35,9 +33,9 @@ extern "C" fn safe_main(args: &[&str]) -> ExitCode {
   ]).with_description("My simple utility.");
 
   // Parse command-line arguments from argv
-  match OPTIONS.parse(
+  match OPTIONS.parse_slice(
     SimplePathBuf::from(*args.first().unwrap()).basename(),
-    args.iter().skip(1), |ctx| {
+    &args[1..], |ctx| {
       match ctx.id {
         Arg::Help => {
           let ctx = HelpWriterContext { options: &OPTIONS, program_name: ctx.program_name };
@@ -45,8 +43,8 @@ extern "C" fn safe_main(args: &[&str]) -> ExitCode {
           return Ok(ParseControl::Quit);
         }
         Arg::Number => { number = str::parse(ctx.arg.unwrap())?; }
-        Arg::File   => { file = ctx.arg.unwrap().into(); }
-        Arg::Out    => { out = Some(ctx.arg.unwrap().into()); }
+        Arg::File   => { file = ctx.arg; }
+        Arg::Out    => { out = ctx.arg; }
       }
       Ok(ParseControl::Continue)
     }, |program_name, error| {
@@ -60,8 +58,9 @@ extern "C" fn safe_main(args: &[&str]) -> ExitCode {
   }
 
   // Print the result variables
+  let file = SimplePathBuf::from(file.unwrap());
   println!("{file} -> {out} (number: {number})",
-    out = out.unwrap_or(file.with_extension("out")));
+    out = out.map_or(file.with_extension("out"), |out| SimplePathBuf::from(out)));
 
   ExitCode::SUCCESS
 }

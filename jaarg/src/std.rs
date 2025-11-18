@@ -18,7 +18,7 @@ impl<ID: 'static> Opts<ID> {
   /// The errors are formatted in a standard user-friendly format.
   ///
   /// Requires `features = ["std"]`.
-  pub fn parse_easy<'a>(&self, handler: impl FnMut(ParseHandlerContext<ID>) -> HandlerResult<'a, ParseControl>
+  pub fn parse_easy<'a>(&'static self, handler: impl FnMut(ParseHandlerContext<ID>) -> HandlerResult<'a, ParseControl>
   ) -> ParseResult {
     let (program_name, argv) = Self::easy_args();
     self.parse(&program_name, argv, handler,
@@ -69,7 +69,7 @@ impl Opts<&'static str> {
   /// Help and errors are formatted in a standard user-friendly format.
   ///
   /// Requires `features = ["std"]`.
-  pub fn parse_map_easy(&self) -> ParseMapResult {
+  pub fn parse_map_easy(&'static self) -> ParseMapResult {
     let (program_name, argv) = Self::easy_args();
     self.parse_map(&program_name, argv,
       |name| self.print_full_help(name),

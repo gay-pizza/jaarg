@@ -29,9 +29,9 @@ pub enum ParseControl {
 }
 
 #[derive(Debug)]
-pub struct ParseHandlerContext<'a, ID: 'static> {
+pub struct ParseHandlerContext<'a, 'name, ID: 'static> {
   /// Name of the program, for printing statuses to the user.
-  pub program_name: &'a str,
+  pub program_name: &'name str,
   /// The generic argument ID that was matched.
   pub id: &'a ID,
   /// The option that was matched by the parser.
@@ -47,12 +47,12 @@ pub struct ParseHandlerContext<'a, ID: 'static> {
 pub(crate) type HandlerResult<'a, T> = core::result::Result<T, ParseError<'a>>;
 
 #[derive(Debug)]
-pub enum ParseError<'a> {
-  UnknownOption(&'a str),
-  UnexpectedToken(&'a str),
-  ExpectArgument(&'a str),
-  UnexpectedArgument(&'a str),
-  ArgumentError(&'static str, &'a str, ParseErrorKind),
+pub enum ParseError<'t> {
+  UnknownOption(&'t str),
+  UnexpectedToken(&'t str),
+  ExpectArgument(&'t str),
+  UnexpectedArgument(&'t str),
+  ArgumentError(&'static str, &'t str, ParseErrorKind),
   //TODO
   //Exclusive(&'static str, &'a str),
   RequiredPositional(&'static str),
@@ -154,6 +154,30 @@ impl<ID: 'static> Opts<ID> {
     self.validate_state(program_name, state, error)
   }
 
+  /// Parses a slice of strings as argument tokens.
+  /// Like [Opts::parse] but allows borrowing argument tokens outside the handler.
+  pub fn parse_slice<'opts, 't, S: AsRef<str>>(&'opts self, program_name: &str, args: &'t [S],
+    mut handler: impl FnMut(ParseHandlerContext<'opts, '_, ID>) -> HandlerResult<'opts, ParseControl>,
+    error: impl FnOnce(&str, ParseError),
+  ) -> ParseResult where 't: 'opts {
+    let mut state = ParserState::default();
+    for arg in args {
+      // Fetch the next token
+      match self.next_borrow(&mut state, arg.as_ref(), program_name, &mut handler) {
+        Ok(ParseControl::Continue) => {}
+        Ok(ParseControl::Stop) => { break; }
+        Ok(ParseControl::Quit) => { return ParseResult::ExitSuccess; }
+        Err(err) => {
+          // Call the error handler
+          error(program_name, err);
+          return ParseResult::ExitFailure;
+        }
+      }
+    }
+
+    self.validate_state(program_name, state, error)
+  }
+
   fn validate_state(&self, program_name: &str, mut state: ParserState<ID>, error: impl FnOnce(&str, ParseError)
   ) -> ParseResult {
     // Ensure that value options are provided a value
@@ -184,11 +208,89 @@ impl<ID: 'static> Opts<ID> {
     ParseResult::ContinueSuccess
   }
 
-  /// Parse the next token in the argument stream
-  fn next<'a, 'b>(&self, state: &mut ParserState<ID>, token: &'b str, program_name: &str,
-    handler: &mut impl FnMut(ParseHandlerContext<ID>) -> HandlerResult<'a, ParseControl>
-  ) -> HandlerResult<'b, ParseControl> where 'a: 'b {
+  /// Parse the next token in the argument stream.
+  fn next<'r, 't>(&self, state: &mut ParserState<ID>, token: &'t str, program_name: &str,
+    handler: &mut impl FnMut(ParseHandlerContext<ID>) -> HandlerResult<'r, ParseControl>
+  ) -> HandlerResult<'t, ParseControl> where 'r: 't {
     let mut call_handler = |option: &Opt<ID>, name, value| {
+      match handler(ParseHandlerContext{ program_name, id: &option.id, option, name, arg: value }) {
+        // HACK: Ensure the string fields are set properly, because coerced
+        //       ParseIntError/ParseFloatError will have the string fields blanked.
+        Err(ParseError::ArgumentError("", "", kind))
+          => Err(ParseError::ArgumentError(name, value.unwrap(), kind)),
+        Err(err) => Err(err),
+        Ok(ctl) => Ok(ctl),
+      }
+    };
+
+    // If the previous token is expecting an argument, ie: value a value option
+    //  was matched and didn't have an equals sign separating a value,
+    //  then call the handler here.
+    if let Some((name, option)) = state.expects_arg.take() {
+      call_handler(option, name, Some(token))
+    } else {
+      // Check if the next argument token starts with an option flag
+      if self.flag_chars.chars().any(|c| token.starts_with(c)) {
+        // Value options can have their value delineated by an equals sign or with whitespace.
+        // In the latter case; the value will be in the next token.
+        let (option_str, value_str) = token.split_once("=")
+          .map_or((token, None), |(k, v)| (k, Some(v)));
+
+        // Keep track of how many required options we've seen
+        let mut required_idx = 0;
+
+        // Match a suitable option by name (ignoring the first flag character & skipping positional arguments)
+        let (name, option) = self.iter()
+          .filter(|opt| matches!(opt.r#type, OptType::Flag | OptType::Value)).find_map(|opt| {
+            if let Some(name) = opt.match_name(option_str, 1) {
+              Some((name, opt))
+            } else {
+              if opt.is_required() {
+                required_idx += 1
+              }
+              None
+            }
+          }).ok_or(ParseError::UnknownOption(option_str))?;
+
+        // Mark required option as visited
+        if option.is_required() {
+          state.required_param_presences.insert(required_idx, true);
+        }
+
+        match (&option.r#type, value_str) {
+          // Call handler for flag-only options
+          (OptType::Flag, None) => call_handler(option, name, None),
+          // Value was provided this token, so call the handler right now
+          (OptType::Value, Some(value)) => call_handler(option, name, Some(value)),
+          // No value available in this token, delay handling to next token
+          (OptType::Value, None) => {
+            state.expects_arg = Some((name, option));
+            Ok(ParseControl::Continue)
+          }
+          // Flag-only options do not support arguments
+          (OptType::Flag, Some(_)) => Err(ParseError::UnexpectedArgument(option_str)),
+          // Positional arguments are filtered out so this is impossible
+          (OptType::Positional, _) => unreachable!("Won't parse a positional argument as an option"),
+        }
+      } else {
+        // Find the next positional argument
+        for (i, option) in self.options[state.positional_index..].iter().enumerate() {
+          if matches!(option.r#type, OptType::Positional) {
+            call_handler(option, option.first_name(), Some(token))?;
+            state.positional_index += i + 1;
+            return Ok(ParseControl::Continue);
+          }
+        }
+        Err(ParseError::UnexpectedToken(token))
+      }
+    }
+  }
+
+  /// I absolutely hate that this needs to be DUPLICATED
+  fn next_borrow<'opts, 't>(&'opts self, state: &mut ParserState<ID>, token: &'t str, program_name: &str,
+    handler: &mut impl FnMut(ParseHandlerContext<'opts, '_, ID>) -> HandlerResult<'opts, ParseControl>
+  ) -> HandlerResult<'opts, ParseControl> where 't: 'opts {
+    let mut call_handler = |option: &'opts Opt<ID>, name, value| {
       match handler(ParseHandlerContext{ program_name, id: &option.id, option, name, arg: value }) {
         // HACK: Ensure the string fields are set properly, because coerced
         //       ParseIntError/ParseFloatError will have the string fields blanked.
@@ -267,22 +369,21 @@ impl<ID: 'static> Opts<ID> {
 mod tests {
   use super::*;
 
+  enum ArgID { One, Two, Three, Four, Five }
+  const OPTIONS: Opts<ArgID> = Opts::new(&[
+    Opt::positional(ArgID::One, "one"),
+    Opt::flag(ArgID::Two, &["--two"]),
+    Opt::value(ArgID::Three, &["--three"], "value"),
+    Opt::value(ArgID::Four, &["--four"], "value"),
+    Opt::value(ArgID::Five, &["--five"], "value"),
+  ]);
+  const ARGUMENTS: &[&str] = &["one", "--two", "--three=three", "--five=", "--four", "four"];
+
   #[test]
   fn test_parse() {
     extern crate alloc;
     use alloc::string::String;
 
-    enum ArgID { One, Two, Three, Four, Five }
-    const OPTIONS: Opts<ArgID> = Opts::new(&[
-      Opt::positional(ArgID::One, "one"),
-      Opt::flag(ArgID::Two, &["--two"]),
-      Opt::value(ArgID::Three, &["--three"], "value"),
-      Opt::value(ArgID::Four, &["--four"], "value"),
-      Opt::value(ArgID::Five, &["--five"], "value"),
-    ]);
-    const ARGUMENTS: &[&str] = &["one", "--two", "--three=three", "--five=", "--four", "four"];
-
-    //TODO: currently needs alloc to deal with arguments not being able to escape handler
     let mut one: Option<String> = None;
     let mut two = false;
     let mut three: Option<String> = None;
@@ -306,5 +407,32 @@ mod tests {
     assert_eq!(three, Some("three".into()));
     assert_eq!(four, Some("four".into()));
     assert_eq!(five, Some("".into()));
+  }
+
+  #[test]
+  fn test_parse_slice() {
+    let mut one: Option<&str> = None;
+    let mut two = false;
+    let mut three: Option<&str> = None;
+    let mut four: Option<&str> = None;
+    let mut five: Option<&str> = None;
+    assert!(matches!(OPTIONS.parse_slice("", &ARGUMENTS, |ctx| {
+      match ctx.id {
+        ArgID::One =>   { one = ctx.arg; }
+        ArgID::Two =>   { two = true; }
+        ArgID::Three => { three = ctx.arg; }
+        ArgID::Four =>  { four = ctx.arg; }
+        ArgID::Five =>  { five = ctx.arg; }
+      }
+      Ok(ParseControl::Continue)
+    }, |_, error| {
+      panic!("unreachable: {error:?}");
+    }), ParseResult::ContinueSuccess));
+
+    assert_eq!(one, Some("one"));
+    assert!(two);
+    assert_eq!(three, Some("three"));
+    assert_eq!(four, Some("four"));
+    assert_eq!(five, Some(""));
   }
 }
