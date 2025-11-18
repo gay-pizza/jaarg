@@ -212,10 +212,10 @@ pub fn main() -> ExitCode {
                        as arrays and C strings respectively.");
   match OPTIONS.parse_easy(|ctx| {
     match ctx.id {
-      Arg::Out => { arguments.out = ctx.arg.into(); }
-      Arg::Bin => { jobs.push(Job { job_type: JobType::Binary, path: ctx.arg.into() }); }
-      Arg::Txt => { jobs.push(Job { job_type: JobType::Text, path: ctx.arg.into() }); }
-      Arg::Whitespace => { arguments.whitespace = ctx.arg.into(); }
+      Arg::Out => { arguments.out = ctx.arg.unwrap().into(); }
+      Arg::Bin => { jobs.push(Job { job_type: JobType::Binary, path: ctx.arg.unwrap().into() }); }
+      Arg::Txt => { jobs.push(Job { job_type: JobType::Text, path: ctx.arg.unwrap().into() }); }
+      Arg::Whitespace => { arguments.whitespace = ctx.arg.unwrap().into(); }
       Arg::Help => {
         OPTIONS.print_full_help(ctx.program_name);
         return Ok(ParseControl::Quit);

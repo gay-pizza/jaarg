@@ -5,9 +5,9 @@
 
 extern crate alloc;
 
-use alloc::collections::BTreeMap;
-use alloc::string::String;
 use crate::{Opts, ParseControl, ParseError, ParseResult};
+use alloc::collections::BTreeMap;
+use alloc::string::{String, ToString};
 
 impl Opts<&'static str> {
   /// Parse an iterator of strings as arguments and return the results in a [`BTreeMap`].
@@ -22,7 +22,7 @@ impl Opts<&'static str> {
         help(program_name);
         Ok(ParseControl::Quit)
       } else {
-        out.insert(ctx.id, ctx.arg.into());
+        out.insert(ctx.id, ctx.arg.unwrap().to_string());
         Ok(ParseControl::Continue)
       }
     }, error) {

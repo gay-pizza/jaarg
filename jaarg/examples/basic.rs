@@ -32,15 +32,15 @@ fn main() {
         OPTIONS.print_full_help(ctx.program_name);
         return Ok(ParseControl::Quit);
       }
-      Arg::Number => { number = str::parse(ctx.arg)?; }
-      Arg::File   => { file = ctx.arg.into(); }
-      Arg::Out    => { out = Some(ctx.arg.into()); }
+      Arg::Number => { number = str::parse(ctx.arg.unwrap().as_ref())?; }
+      Arg::File   => { file = ctx.arg.unwrap().into(); }
+      Arg::Out    => { out = Some(ctx.arg.unwrap().into()); }
     }
     Ok(ParseControl::Continue)
   }) {
     ParseResult::ContinueSuccess => (),
-    ParseResult::ExitSuccess     => std::process::exit(0),
-    ParseResult::ExitFailure     => std::process::exit(1),
+    ParseResult::ExitSuccess => std::process::exit(0),
+    ParseResult::ExitFailure => std::process::exit(1),
   }
 
   // Print the result variables

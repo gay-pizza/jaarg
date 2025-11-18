@@ -44,9 +44,9 @@ extern "C" fn safe_main(args: &[&str]) -> ExitCode {
           print!("{}", StandardFullHelpWriter::<'_, Arg>::new(ctx));
           return Ok(ParseControl::Quit);
         }
-        Arg::Number => { number = str::parse(ctx.arg)?; }
-        Arg::File   => { file = ctx.arg.into(); }
-        Arg::Out    => { out = Some(ctx.arg.into()); }
+        Arg::Number => { number = str::parse(ctx.arg.unwrap())?; }
+        Arg::File   => { file = ctx.arg.unwrap().into(); }
+        Arg::Out    => { out = Some(ctx.arg.unwrap().into()); }
       }
       Ok(ParseControl::Continue)
     }, |program_name, error| {

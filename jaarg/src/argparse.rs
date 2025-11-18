@@ -39,8 +39,8 @@ pub struct ParseHandlerContext<'a, ID: 'static> {
   /// The name of the argument parameter that was matched,
   /// for option parameters this is the token supplied by the user.
   pub name: &'a str,
-  /// The argument provided to positional arguments and value options, else "".
-  pub arg: &'a str,
+  /// The argument provided to positional arguments and value options (will always be Some), or None for flags.
+  pub arg: Option<&'a str>,
 }
 
 /// Result type used by the handler passed to the parser.
@@ -151,6 +151,11 @@ impl<ID: 'static> Opts<ID> {
       }
     }
 
+    self.validate_state(program_name, state, error)
+  }
+
+  fn validate_state(&self, program_name: &str, mut state: ParserState<ID>, error: impl FnOnce(&str, ParseError)
+  ) -> ParseResult {
     // Ensure that value options are provided a value
     if let Some((name, _)) = state.expects_arg.take() {
       error(program_name, ParseError::ExpectArgument(name));
@@ -188,7 +193,7 @@ impl<ID: 'static> Opts<ID> {
         // HACK: Ensure the string fields are set properly, because coerced
         //       ParseIntError/ParseFloatError will have the string fields blanked.
         Err(ParseError::ArgumentError("", "", kind))
-          => Err(ParseError::ArgumentError(name, value, kind)),
+          => Err(ParseError::ArgumentError(name, value.unwrap(), kind)),
         Err(err) => Err(err),
         Ok(ctl) => Ok(ctl),
       }
@@ -198,7 +203,7 @@ impl<ID: 'static> Opts<ID> {
     //  was matched and didn't have an equals sign separating a value,
     //  then call the handler here.
     if let Some((name, option)) = state.expects_arg.take() {
-      call_handler(option, name, token)
+      call_handler(option, name, Some(token))
     } else {
       // Check if the next argument token starts with an option flag
       if self.flag_chars.chars().any(|c| token.starts_with(c)) {
@@ -230,9 +235,9 @@ impl<ID: 'static> Opts<ID> {
 
         match (&option.r#type, value_str) {
           // Call handler for flag-only options
-          (OptType::Flag, None) => call_handler(option, name, ""),
+          (OptType::Flag, None) => call_handler(option, name, None),
           // Value was provided this token, so call the handler right now
-          (OptType::Value, Some(value)) => call_handler(option, name, value),
+          (OptType::Value, Some(value)) => call_handler(option, name, Some(value)),
           // No value available in this token, delay handling to next token
           (OptType::Value, None) => {
             state.expects_arg = Some((name, option));
@@ -247,7 +252,7 @@ impl<ID: 'static> Opts<ID> {
         // Find the next positional argument
         for (i, option) in self.options[state.positional_index..].iter().enumerate() {
           if matches!(option.r#type, OptType::Positional) {
-            call_handler(option, option.first_name(), token)?;
+            call_handler(option, option.first_name(), Some(token))?;
             state.positional_index += i + 1;
             return Ok(ParseControl::Continue);
           }
@@ -260,12 +265,13 @@ impl<ID: 'static> Opts<ID> {
 
 #[cfg(test)]
 mod tests {
-  extern crate alloc;
-  use alloc::string::String;
   use super::*;
 
   #[test]
-  fn test() {
+  fn test_parse() {
+    extern crate alloc;
+    use alloc::string::String;
+
     enum ArgID { One, Two, Three, Four, Five }
     const OPTIONS: Opts<ArgID> = Opts::new(&[
       Opt::positional(ArgID::One, "one"),
@@ -284,11 +290,11 @@ mod tests {
     let mut five: Option<String> = None;
     assert!(matches!(OPTIONS.parse("", ARGUMENTS.iter(), |ctx| {
       match ctx.id {
-        ArgID::One =>   { one = Some(ctx.arg.into()); }
+        ArgID::One =>   { one = Some(ctx.arg.unwrap().into()); }
         ArgID::Two =>   { two = true; }
-        ArgID::Three => { three = Some(ctx.arg.into()); }
-        ArgID::Four =>  { four = Some(ctx.arg.into()); }
-        ArgID::Five =>  { five = Some(ctx.arg.into()); }
+        ArgID::Three => { three = Some(ctx.arg.unwrap().into()); }
+        ArgID::Four =>  { four = Some(ctx.arg.unwrap().into()); }
+        ArgID::Five =>  { five = Some(ctx.arg.unwrap().into()); }
       }
       Ok(ParseControl::Continue)
     }, |_, error| {
