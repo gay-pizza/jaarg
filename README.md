@@ -60,6 +60,7 @@ println!("{file:?} -> {out:?} (number: {number:?})",
 main:
  * Fixed coerced `ArgumentError` not being rewritten for positional arguments.
  * Moved top level includes to `pub use`.
+ * Hopefully work around licence & read me texts not being included in crate.
 
 v0.2.1:
  * Fixed licence field in `Cargo.toml`.
