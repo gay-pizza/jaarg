@@ -232,7 +232,7 @@ impl<ID: 'static> Opts<ID> {
         // Find the next positional argument
         for (i, option) in self.options[state.positional_index..].iter().enumerate() {
           if matches!(option.r#type, OptType::Positional) {
-            handler(program_name, &option.id, option, option.first_name(), token)?;
+            call_handler(option, option.first_name(), token)?;
             state.positional_index += i + 1;
             return Ok(ParseControl::Continue);
           }

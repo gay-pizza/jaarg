@@ -58,6 +58,7 @@ println!("{file:?} -> {out:?} (number: {number:?})",
 ### Changelog ###
 
 main:
+ * Fixed coerced `ArgumentError` not being rewritten for positional arguments.
  * Moved top level includes to `pub use`.
 
 v0.2.1:
